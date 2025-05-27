@@ -1,0 +1,6 @@
+vendor/
+
+# Test files
+test_validation.php
+validation_test.php
+.DS_Store
