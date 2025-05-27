@@ -60,6 +60,9 @@ return [
             //     'events' => ['created', 'updated', 'deleted'],
             //     'getters' => ['name', 'email'],
             //     'setters' => ['name', 'email'],
+            //     'watched_attributes' => ['name', 'email'], // Only trigger update events for these attributes
+            //     'queue_events' => false,
+            //     'queue_name' => 'default',
             // ],
         ],
     ],
@@ -73,6 +76,9 @@ return [
     |
     */
     'events' => [
+        // Enable/disable event processing globally
+        'enabled' => true,
+        
         // Default events to listen for
         'default' => ['created', 'updated', 'deleted'],
         
@@ -80,6 +86,12 @@ return [
         'property_events' => [
             'enabled' => true,
             'default' => [], // Default properties to trigger events for
+            'skip_unchanged' => true, // Skip setter events if value didn't change
+            'rate_limit' => [
+                'enabled' => true,
+                'max_attempts' => 10,
+                'decay_minutes' => 1,
+            ],
         ],
         
         // Transaction handling
@@ -87,6 +99,15 @@ return [
             'enabled' => true,
             'rollback_on_error' => true,
         ],
+        
+        // Queue configuration for events
+        'queue' => [
+            'enabled' => false,
+            'name' => 'default',
+        ],
+        
+        // Error handling
+        'throw_on_error' => false,
     ],
 
     /*

@@ -3,7 +3,14 @@
 namespace N8n\Eloquent\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Event;
 use N8n\Eloquent\Console\Commands\RegisterModelsCommand;
+use N8n\Eloquent\Console\Commands\SetupCommand;
+use N8n\Eloquent\Console\Commands\StatusCommand;
+use N8n\Eloquent\Events\ModelLifecycleEvent;
+use N8n\Eloquent\Events\ModelPropertyEvent;
+use N8n\Eloquent\Listeners\ModelLifecycleListener;
+use N8n\Eloquent\Listeners\ModelPropertyListener;
 use N8n\Eloquent\Services\ModelDiscoveryService;
 use N8n\Eloquent\Services\WebhookService;
 
@@ -44,11 +51,27 @@ class N8nEloquentServiceProvider extends ServiceProvider
         // Load routes
         $this->loadRoutesFrom(__DIR__.'/../../routes/api.php');
 
+        // Register event listeners
+        $this->registerEventListeners();
+
         // Register commands
         if ($this->app->runningInConsole()) {
             $this->commands([
                 RegisterModelsCommand::class,
+                SetupCommand::class,
+                StatusCommand::class,
             ]);
         }
+    }
+
+    /**
+     * Register event listeners.
+     *
+     * @return void
+     */
+    protected function registerEventListeners()
+    {
+        Event::listen(ModelLifecycleEvent::class, ModelLifecycleListener::class);
+        Event::listen(ModelPropertyEvent::class, ModelPropertyListener::class);
     }
 } 

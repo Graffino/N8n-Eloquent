@@ -3,7 +3,8 @@
 namespace N8n\Eloquent\Traits;
 
 use Illuminate\Support\Facades\App;
-use N8n\Eloquent\Services\WebhookService;
+use Illuminate\Support\Facades\Event;
+use N8n\Eloquent\Events\ModelPropertyEvent;
 
 trait HasN8nEvents
 {
@@ -41,8 +42,7 @@ trait HasN8nEvents
             
             // Check if this property should trigger an event
             if (in_array($key, $getters)) {
-                $webhookService = App::make(WebhookService::class);
-                $webhookService->triggerWebhook($modelClass, 'get', $this);
+                Event::dispatch(new ModelPropertyEvent($this, 'get', $key));
             }
         }
         
@@ -77,13 +77,11 @@ trait HasN8nEvents
                 // Set the value
                 parent::__set($key, $value);
                 
-                // Trigger the webhook with both old and new values
-                $webhookService = App::make(WebhookService::class);
-                $this->setAttribute('_n8n_old_value', $oldValue);
-                $this->setAttribute('_n8n_property_name', $key);
-                $webhookService->triggerWebhook($modelClass, 'set', $this);
-                $this->offsetUnset('_n8n_old_value');
-                $this->offsetUnset('_n8n_property_name');
+                // Trigger the event with both old and new values
+                Event::dispatch(new ModelPropertyEvent($this, 'set', $key, [
+                    'old_value' => $oldValue,
+                    'new_value' => $value,
+                ]));
                 
                 return;
             }

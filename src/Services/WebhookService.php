@@ -143,9 +143,10 @@ class WebhookService
      * @param  string  $modelClass
      * @param  string  $event
      * @param  mixed  $model
+     * @param  array  $additionalPayload
      * @return void
      */
-    public function triggerWebhook(string $modelClass, string $event, $model): void
+    public function triggerWebhook(string $modelClass, string $event, $model, array $additionalPayload = []): void
     {
         // Get subscriptions for this model and event
         $subscriptions = $this->getSubscriptionsForModelEvent($modelClass, $event);
@@ -155,15 +156,20 @@ class WebhookService
         }
         
         // Prepare the payload
-        $payload = [
+        $payload = array_merge([
             'event' => $event,
             'model' => $modelClass,
             'timestamp' => now()->toIso8601String(),
             'data' => $model->toArray(),
-        ];
+        ], $additionalPayload);
         
         // Send the webhook to each subscription
         foreach ($subscriptions as $subscription) {
+            // Skip inactive subscriptions
+            if (isset($subscription['active']) && !$subscription['active']) {
+                continue;
+            }
+            
             $this->sendWebhookRequest(
                 $subscription['webhook_url'],
                 $payload,
@@ -213,5 +219,145 @@ class WebhookService
                     'url' => $url,
                 ]);
         }
+    }
+
+    /**
+     * Get all webhook subscriptions.
+     *
+     * @return array
+     */
+    public function getAllSubscriptions(): array
+    {
+        return array_values($this->getSubscriptions());
+    }
+
+    /**
+     * Get a specific webhook subscription.
+     *
+     * @param  string  $subscriptionId
+     * @return array|null
+     */
+    public function getSubscription(string $subscriptionId): ?array
+    {
+        $subscriptions = $this->getSubscriptions();
+        return $subscriptions[$subscriptionId] ?? null;
+    }
+
+    /**
+     * Update a webhook subscription.
+     *
+     * @param  string  $subscriptionId
+     * @param  array  $updates
+     * @return array|null
+     */
+    public function updateSubscription(string $subscriptionId, array $updates): ?array
+    {
+        $subscriptions = $this->getSubscriptions();
+        
+        if (!isset($subscriptions[$subscriptionId])) {
+            return null;
+        }
+        
+        // Update the subscription
+        $subscriptions[$subscriptionId] = array_merge(
+            $subscriptions[$subscriptionId],
+            $updates,
+            ['updated_at' => now()->toIso8601String()]
+        );
+        
+        // Save the subscriptions
+        $this->saveSubscriptions($subscriptions);
+        
+        Log::channel(config('n8n-eloquent.logging.channel'))
+            ->info("Updated webhook subscription {$subscriptionId}", [
+                'updates' => $updates,
+            ]);
+        
+        return $subscriptions[$subscriptionId];
+    }
+
+    /**
+     * Send a webhook to a specific URL.
+     *
+     * @param  string  $url
+     * @param  array  $payload
+     * @return array
+     */
+    public function sendWebhook(string $url, array $payload): array
+    {
+        try {
+            $client = new \GuzzleHttp\Client();
+            
+            $apiSecret = config('n8n-eloquent.api.secret');
+            
+            // Calculate HMAC signature
+            $signature = hash_hmac('sha256', json_encode($payload), $apiSecret);
+            
+            // Send the request
+            $response = $client->post($url, [
+                'json' => $payload,
+                'headers' => [
+                    'Content-Type' => 'application/json',
+                    'X-N8n-Signature' => $signature,
+                ],
+                'timeout' => 10,
+            ]);
+            
+            return [
+                'success' => true,
+                'status_code' => $response->getStatusCode(),
+                'response_body' => $response->getBody()->getContents(),
+            ];
+        } catch (\Throwable $e) {
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'status_code' => $e->getCode(),
+            ];
+        }
+    }
+
+    /**
+     * Get webhook statistics.
+     *
+     * @return array
+     */
+    public function getWebhookStats(): array
+    {
+        $subscriptions = $this->getSubscriptions();
+        
+        $stats = [
+            'total_subscriptions' => count($subscriptions),
+            'active_subscriptions' => 0,
+            'inactive_subscriptions' => 0,
+            'models' => [],
+            'events' => [],
+        ];
+        
+        foreach ($subscriptions as $subscription) {
+            // Count active/inactive
+            if (isset($subscription['active']) && !$subscription['active']) {
+                $stats['inactive_subscriptions']++;
+            } else {
+                $stats['active_subscriptions']++;
+            }
+            
+            // Count by model
+            $model = $subscription['model'];
+            if (!isset($stats['models'][$model])) {
+                $stats['models'][$model] = 0;
+            }
+            $stats['models'][$model]++;
+            
+            // Count by event
+            foreach ($subscription['events'] as $event) {
+                if (!isset($stats['events'][$event])) {
+                    $stats['events'][$event] = 0;
+                }
+                $stats['events'][$event]++;
+            }
+        }
+        
+        return $stats;
     }
 } 

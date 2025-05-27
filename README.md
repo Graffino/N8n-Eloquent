@@ -19,13 +19,25 @@ A Laravel package that enables seamless integration between Laravel Eloquent mod
 composer require n8n/eloquent
 ```
 
-After installing the package, publish the configuration file:
+After installing the package, run the setup command:
+
+```bash
+php artisan n8n:setup
+```
+
+This will:
+- Publish the configuration file
+- Generate an API secret key
+- Update your `.env` file
+- Display setup instructions
+
+Alternatively, you can manually publish the configuration file:
 
 ```bash
 php artisan vendor:publish --tag=n8n-eloquent-config
 ```
 
-Set up your `.env` file with the following variables:
+And set up your `.env` file with the following variables:
 
 ```
 N8N_ELOQUENT_API_SECRET=your-secret-key
@@ -38,6 +50,46 @@ Install the n8n Eloquent node extension in your n8n instance:
 
 ```bash
 npm install n8n-nodes-laravel-eloquent
+```
+
+## Artisan Commands
+
+The package provides several artisan commands for management:
+
+### Setup Command
+```bash
+# Interactive setup with automatic configuration
+php artisan n8n:setup
+
+# Setup with custom API secret
+php artisan n8n:setup --api-secret=your-custom-secret
+
+# Force overwrite existing configuration
+php artisan n8n:setup --force
+```
+
+### Status Command
+```bash
+# Show basic status information
+php artisan n8n:status
+
+# Show detailed status with configuration details
+php artisan n8n:status --detailed
+```
+
+### Model Registration Command
+```bash
+# Register all models in whitelist mode
+php artisan n8n:register-models --whitelist
+
+# Register all models in blacklist mode
+php artisan n8n:register-models --blacklist
+
+# Register all discovered models
+php artisan n8n:register-models --all
+
+# Register a specific model
+php artisan n8n:register-models --model="App\Models\User"
 ```
 
 ## Configuration
