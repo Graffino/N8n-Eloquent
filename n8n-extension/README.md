@@ -177,20 +177,64 @@ Laravel Eloquent Trigger (Order created)
 
 ## 🔐 Security
 
-### API Authentication
-- All requests use API key authentication via `X-N8n-Api-Key` header
-- Keys are generated during Laravel package setup
+### Multi-Layer Security Architecture
+Our extension implements comprehensive security measures to ensure safe communication:
 
-### HMAC Signature Verification
-- Optional HMAC-SHA256 signature verification for webhooks
-- Prevents unauthorized webhook calls
+#### 1. API Key Authentication
+- All requests use API key authentication via `X-N8n-Api-Key` header
+- Strong, randomly generated keys during Laravel package setup
+- Support for key rotation and environment-specific keys
+
+#### 2. HMAC Signature Verification
+- HMAC-SHA256 signature verification for webhook payloads
+- Timing-safe comparison to prevent timing attacks
+- Configurable per trigger node with `verifyHmac` option
 - Signature sent in `X-Laravel-Signature` header
 
+#### 3. Timestamp Validation (Replay Attack Prevention)
+- Validates webhook timestamps to prevent replay attacks
+- Configurable time window (default: 5 minutes)
+- Ensures webhook freshness and prevents captured payload reuse
+
+#### 4. IP Address Restriction
+- Optional IP address or CIDR range filtering
+- Supports both single IP and subnet restrictions
+- Configurable per trigger node for granular control
+
+#### 5. Model and Event Validation
+- Validates incoming webhooks match configured models and events
+- Prevents unauthorized model access and cross-model data leakage
+- Ensures webhook authenticity and integrity
+
+#### 6. Enhanced Error Handling
+- Comprehensive security violation logging
+- Sanitized error messages (no sensitive data exposure)
+- Detailed categorization of authentication and validation errors
+
+### Security Configuration Example
+```typescript
+// Laravel Eloquent Trigger Node Configuration
+{
+  "model": "App\\Models\\User",
+  "events": ["created", "updated"],
+  "verifyHmac": true,
+  "requireTimestamp": true,
+  "expectedSourceIp": "192.168.1.0/24"
+}
+```
+
 ### Best Practices
-- Use HTTPS for all communications
-- Regularly rotate API keys
-- Enable HMAC verification for production
-- Limit API access to specific IP ranges if possible
+- **Always use HTTPS** for all communications in production
+- **Enable HMAC verification** for production environments
+- **Regularly rotate API keys** (recommended: every 90 days)
+- **Use IP restrictions** to limit access to known sources
+- **Monitor security logs** for unusual activity
+- **Keep timestamps synchronized** between systems
+- **Use strong secrets** (minimum 32 characters for HMAC)
+
+### Security Documentation
+- [Complete Security Guide](SECURITY.md) - Comprehensive security features and best practices
+- [Testing Guide](TESTING.md) - Security testing procedures and automation
 
 ## 🛠️ Development
 

@@ -4,9 +4,6 @@ module.exports = {
     ecmaVersion: 2019,
     sourceType: 'module',
   },
-  extends: [
-    '@typescript-eslint/recommended',
-  ],
   plugins: [
     '@typescript-eslint',
   ],

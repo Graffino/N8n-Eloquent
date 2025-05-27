@@ -183,9 +183,12 @@ export class LaravelEloquentGet implements INodeType {
 		const returnData: INodeExecutionData[] = [];
 
 		for (let i = 0; i < items.length; i++) {
+			let operation = '';
+			let model = '';
+			
 			try {
-				const operation = this.getNodeParameter('operation', i) as string;
-				const model = this.getNodeParameter('model', i) as string;
+				operation = this.getNodeParameter('operation', i) as string;
+				model = this.getNodeParameter('model', i) as string;
 				const credentials = await this.getCredentials('laravelEloquentApi', i);
 
 				let endpoint = '';
@@ -272,9 +275,30 @@ export class LaravelEloquentGet implements INodeType {
 					}
 				}
 			} catch (error) {
+				// Enhanced error handling with security logging
+				const errorMessage = error instanceof Error ? error.message : String(error);
+				const isAuthError = errorMessage.includes('401') || errorMessage.includes('403') || errorMessage.includes('Unauthorized');
+				
+				// Log security-related errors
+				if (isAuthError) {
+					console.error('Laravel Eloquent Get Authentication Error:', {
+						error: errorMessage,
+						operation,
+						model,
+						timestamp: new Date().toISOString(),
+						itemIndex: i,
+					});
+				}
+
 				if (this.continueOnFail()) {
 					returnData.push({
-						json: { error: error instanceof Error ? error.message : String(error) },
+						json: { 
+							error: errorMessage,
+							operation,
+							model,
+							timestamp: new Date().toISOString(),
+							isAuthError,
+						},
 						pairedItem: { item: i },
 					});
 					continue;
