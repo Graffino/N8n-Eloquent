@@ -4,3 +4,7 @@ vendor/
 test_validation.php
 validation_test.php
 .DS_Store
+
+# n8n extension
+n8n-extension/node_modules/
+n8n-extension/dist/

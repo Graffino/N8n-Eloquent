@@ -1,0 +1,280 @@
+# n8n Laravel Eloquent Integration
+
+![n8n](https://img.shields.io/badge/n8n-community--node-FF6D5A)
+![Laravel](https://img.shields.io/badge/Laravel-8.x%20%7C%209.x%20%7C%2010.x%20%7C%2011.x%20%7C%2012.x-FF2D20)
+![License](https://img.shields.io/badge/license-MIT-blue)
+
+A comprehensive n8n community node package that provides seamless integration with Laravel Eloquent models. This extension allows you to trigger workflows on Laravel model events and perform CRUD operations directly from n8n.
+
+## 🚀 Features
+
+- **🔔 Real-time Triggers**: Listen to Laravel Eloquent model events (created, updated, deleted, etc.)
+- **📖 Data Reading**: Fetch records from Laravel models with filtering and relationships
+- **✏️ Data Writing**: Create, update, upsert, and delete Laravel model records
+- **🔐 Secure Authentication**: API key and HMAC signature verification
+- **🔗 Relationship Support**: Include related models in your queries
+- **🎯 Advanced Filtering**: Search records with multiple filter conditions
+- **⚡ High Performance**: Optimized for production use
+
+## 📦 Installation
+
+### Prerequisites
+
+1. **Laravel Package**: First, install the Laravel n8n Eloquent package in your Laravel application:
+   ```bash
+   composer require n8n-eloquent/laravel-package
+   ```
+
+2. **n8n Instance**: You need a running n8n instance (self-hosted or n8n Cloud)
+
+### Install the n8n Extension
+
+#### Option 1: Via n8n Community Nodes (Recommended)
+1. Go to **Settings** → **Community Nodes** in your n8n instance
+2. Click **Install a community node**
+3. Enter: `n8n-nodes-laravel-eloquent`
+4. Click **Install**
+
+#### Option 2: Manual Installation
+```bash
+# In your n8n installation directory
+npm install n8n-nodes-laravel-eloquent
+```
+
+## 🔧 Configuration
+
+### 1. Laravel Setup
+
+Configure your Laravel application with the n8n Eloquent package:
+
+```bash
+# Publish configuration
+php artisan vendor:publish --provider="N8nEloquent\LaravelPackage\N8nEloquentServiceProvider"
+
+# Run setup command
+php artisan n8n:setup
+```
+
+### 2. n8n Credentials Setup
+
+1. In n8n, go to **Credentials** → **Add Credential**
+2. Search for "Laravel Eloquent API"
+3. Configure:
+   - **Base URL**: Your Laravel application URL (e.g., `https://your-app.com`)
+   - **API Key**: Generated during Laravel setup
+   - **HMAC Secret**: (Optional) For webhook signature verification
+
+## 📋 Available Nodes
+
+### 🔔 Laravel Eloquent Trigger
+
+Triggers workflows when Laravel model events occur.
+
+**Configuration:**
+- **Model**: Laravel model class (e.g., `App\Models\User`)
+- **Events**: Select which events to listen for:
+  - `created` - When a new record is created
+  - `updated` - When a record is updated
+  - `deleted` - When a record is deleted
+  - `restored` - When a soft-deleted record is restored
+  - `saving` - Before a record is saved
+  - `saved` - After a record is saved
+- **Verify HMAC Signature**: Enable/disable signature verification
+
+**Output:**
+```json
+{
+  "event": "created",
+  "model": "App\\Models\\User",
+  "data": {
+    "id": 1,
+    "name": "John Doe",
+    "email": "john@example.com",
+    "created_at": "2024-01-15T10:30:00Z",
+    "updated_at": "2024-01-15T10:30:00Z"
+  },
+  "changes": {},
+  "timestamp": "2024-01-15T10:30:00Z"
+}
+```
+
+### 📖 Laravel Eloquent Get
+
+Retrieves data from Laravel models.
+
+**Operations:**
+- **Get All**: Retrieve all records with optional limit
+- **Get by ID**: Fetch a specific record by ID
+- **Search**: Find records with custom filters
+
+**Configuration:**
+- **Model**: Laravel model class
+- **Limit**: Maximum number of records (for Get All/Search)
+- **Record ID**: Specific record ID (for Get by ID)
+- **Filters**: Advanced filtering options (for Search)
+- **Include Relationships**: Comma-separated list of relationships
+
+**Example Filters:**
+```json
+[
+  {
+    "field": "status",
+    "operator": "=",
+    "value": "active"
+  },
+  {
+    "field": "created_at",
+    "operator": ">=",
+    "value": "2024-01-01"
+  }
+]
+```
+
+### ✏️ Laravel Eloquent Set
+
+Creates, updates, or deletes Laravel model records.
+
+**Operations:**
+- **Create**: Create new records
+- **Update**: Update existing records
+- **Upsert**: Create or update records
+- **Delete**: Delete records
+
+**Configuration:**
+- **Model**: Laravel model class
+- **Record ID**: Required for Update/Delete operations
+- **Data Source**: Choose between manual field definition or JSON input
+- **Fields**: Define field names and values
+- **Upsert Key**: Field to check for existing records (for Upsert)
+
+## 🔄 Workflow Examples
+
+### Example 1: User Registration Notification
+
+```
+Laravel Eloquent Trigger (User created) 
+→ Send Email Node 
+→ Slack Notification
+```
+
+### Example 2: Data Synchronization
+
+```
+Schedule Trigger 
+→ Laravel Eloquent Get (fetch updated records) 
+→ Transform Data 
+→ External API Call
+```
+
+### Example 3: Order Processing
+
+```
+Laravel Eloquent Trigger (Order created) 
+→ IF Node (check order amount) 
+→ Laravel Eloquent Set (update order status) 
+→ Send confirmation email
+```
+
+## 🔐 Security
+
+### API Authentication
+- All requests use API key authentication via `X-N8n-Api-Key` header
+- Keys are generated during Laravel package setup
+
+### HMAC Signature Verification
+- Optional HMAC-SHA256 signature verification for webhooks
+- Prevents unauthorized webhook calls
+- Signature sent in `X-Laravel-Signature` header
+
+### Best Practices
+- Use HTTPS for all communications
+- Regularly rotate API keys
+- Enable HMAC verification for production
+- Limit API access to specific IP ranges if possible
+
+## 🛠️ Development
+
+### Building from Source
+
+```bash
+# Clone the repository
+git clone https://github.com/n8n-io/n8n-eloquent.git
+cd n8n-eloquent/n8n-extension
+
+# Install dependencies
+npm install
+
+# Build the project
+npm run build
+
+# Run linting
+npm run lint
+```
+
+### Testing
+
+```bash
+# Run tests (when available)
+npm test
+
+# Type checking
+npm run build
+```
+
+## 📚 API Reference
+
+### Laravel Package Endpoints
+
+The Laravel package provides these API endpoints:
+
+- `GET /api/n8n/models` - List available models
+- `GET /api/n8n/models/{model}` - Get all records
+- `GET /api/n8n/models/{model}/{id}` - Get specific record
+- `POST /api/n8n/models/{model}` - Create record
+- `PUT /api/n8n/models/{model}/{id}` - Update record
+- `DELETE /api/n8n/models/{model}/{id}` - Delete record
+- `POST /api/n8n/models/{model}/upsert` - Upsert record
+- `POST /api/n8n/webhooks/subscribe` - Subscribe to events
+- `DELETE /api/n8n/webhooks/unsubscribe` - Unsubscribe from events
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+
+### Development Setup
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🆘 Support
+
+- **Documentation**: [Full Documentation](https://github.com/n8n-io/n8n-eloquent/wiki)
+- **Issues**: [GitHub Issues](https://github.com/n8n-io/n8n-eloquent/issues)
+- **Community**: [n8n Community Forum](https://community.n8n.io)
+- **Discord**: [n8n Discord Server](https://discord.gg/n8n)
+
+## 🗺️ Roadmap
+
+- [ ] Advanced relationship handling
+- [ ] Bulk operations support
+- [ ] Custom validation rules
+- [ ] Performance monitoring
+- [ ] GraphQL support
+- [ ] Real-time data streaming
+
+## 🙏 Acknowledgments
+
+- [n8n](https://n8n.io) - The workflow automation platform
+- [Laravel](https://laravel.com) - The PHP framework
+- [Eloquent ORM](https://laravel.com/docs/eloquent) - Laravel's ORM
+
+---
+
+**Made with ❤️ for the n8n and Laravel communities** 
