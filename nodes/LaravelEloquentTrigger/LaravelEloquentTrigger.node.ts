@@ -8,6 +8,8 @@ import {
 	NodeOperationError,
 	IHookFunctions,
 	IHttpRequestMethods,
+	ILoadOptionsFunctions,
+	INodePropertyOptions,
 } from 'n8n-workflow';
 
 import { createHmac, timingSafeEqual } from 'crypto';
@@ -44,10 +46,12 @@ export class LaravelEloquentTrigger implements INodeType {
 			{
 				displayName: 'Model',
 				name: 'model',
-				type: 'string',
+				type: 'options',
+				typeOptions: {
+					loadOptionsMethod: 'getModels',
+				},
 				default: '',
 				required: true,
-				placeholder: 'App\\Models\\User',
 				description: 'The Laravel Eloquent model class to monitor',
 			},
 			{
@@ -118,6 +122,44 @@ export class LaravelEloquentTrigger implements INodeType {
 				description: 'Optional: Restrict webhooks to specific IP address or CIDR range',
 			},
 		],
+	};
+
+	methods = {
+		loadOptions: {
+			// Load available models from Laravel API
+			async getModels(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				try {
+					const credentials = await this.getCredentials('laravelEloquentApi');
+					
+					const options = {
+						method: 'GET' as IHttpRequestMethods,
+						headers: {
+							'Content-Type': 'application/json',
+							'Accept': 'application/json',
+							'X-N8n-Api-Key': credentials.apiKey as string,
+						},
+						uri: `${credentials.baseUrl}/api/n8n/models`,
+						json: true,
+					};
+
+					const response = await this.helpers.request(options);
+					
+					if (response.models && Array.isArray(response.models)) {
+						return response.models.map((model: any) => ({
+							name: model.name || model.class.split('\\').pop(),
+							value: model.class,
+							description: `Table: ${model.table} | Primary Key: ${model.primaryKey}`,
+						}));
+					}
+					
+					return [];
+				} catch (error) {
+					console.error('Failed to load models:', error);
+					// Return empty array if API call fails
+					return [];
+				}
+			},
+		},
 	};
 
 	// Webhook lifecycle methods for automatic registration/unregistration
