@@ -9,6 +9,8 @@ import {
 	IHookFunctions,
 	ILoadOptionsFunctions,
 	INodePropertyOptions,
+	ITriggerFunctions,
+	ITriggerResponse,
 } from 'n8n-workflow';
 
 import { createHmac, timingSafeEqual } from 'crypto';
@@ -441,6 +443,32 @@ export class LaravelEloquentTrigger implements INodeType {
 					},
 				],
 			],
+		};
+	}
+
+	// Main trigger method - required for n8n to recognize this as a trigger node
+	async trigger(this: ITriggerFunctions): Promise<ITriggerResponse> {
+		// For webhook-based triggers, we return the webhook lifecycle methods
+		// This tells n8n that this trigger uses webhooks for activation
+		return {
+			closeFunction: async () => {
+				// This will be called when the workflow is deactivated
+				// The webhookDelete method will handle the actual cleanup
+				console.log('🔄 Laravel Eloquent trigger deactivated');
+			},
+			manualTriggerFunction: async () => {
+				// This is called when the user manually tests the trigger
+				console.log('🔄 Laravel Eloquent trigger manual test');
+				this.emit([
+					this.helpers.returnJsonArray([
+						{
+							message: 'Manual trigger test - webhook is active and ready to receive Laravel model events',
+							timestamp: new Date().toISOString(),
+							test: true,
+						},
+					]),
+				]);
+			},
 		};
 	}
 } 
