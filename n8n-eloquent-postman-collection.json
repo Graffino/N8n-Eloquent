@@ -1,14 +1,14 @@
 {
 	"info": {
-		"_postman_id": "n8n-eloquent-api-collection",
-		"name": "n8n-Eloquent API Collection",
-		"description": "Comprehensive API collection for testing n8n-Eloquent Laravel package CRUD operations, model discovery, and webhook management.",
+		"_postman_id": "n8n-eloquent-api-collection-v2",
+		"name": "n8n-Eloquent API Collection v2.0 - Production Ready",
+		"description": "Comprehensive API collection for testing n8n-Eloquent Laravel package with all production features including database persistence, health monitoring, enhanced model discovery, and complete CRUD operations.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "n8n-eloquent"
+		"_exporter_id": "n8n-eloquent-v2"
 	},
 	"item": [
 		{
-			"name": "🔍 Model Discovery",
+			"name": "🔍 Model Discovery & Metadata",
 			"item": [
 				{
 					"name": "Get All Models",
@@ -37,12 +37,51 @@
 								"models"
 							]
 						},
-						"description": "Get all available models with their metadata including class, name, table, primaryKey, fillable attributes, and event configuration."
+						"description": "Get all available models with enhanced metadata including class, name, table, primaryKey, fillable attributes, events, and property event configuration."
 					},
 					"response": []
 				},
 				{
-					"name": "Get Specific Model",
+					"name": "Search Models",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-N8n-Api-Key",
+								"value": "{{api_secret}}",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/n8n/models/search?q=User",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"n8n",
+								"models",
+								"search"
+							],
+							"query": [
+								{
+									"key": "q",
+									"value": "User",
+									"description": "Search term for model names"
+								}
+							]
+						},
+						"description": "Search for models by name or class."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Specific Model Details",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -69,7 +108,73 @@
 								"{{model_class}}"
 							]
 						},
-						"description": "Get metadata for a specific model. Use URL-encoded model class name (e.g., App%5CModels%5CUser for App\\Models\\User)."
+						"description": "Get detailed metadata for a specific model. Use URL-encoded model class name (e.g., App%5CModels%5CUser for App\\Models\\User)."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Model Fields",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-N8n-Api-Key",
+								"value": "{{api_secret}}",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/n8n/models/{{model_class}}/fields",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"n8n",
+								"models",
+								"{{model_class}}",
+								"fields"
+							]
+						},
+						"description": "Get detailed field information including types, validation rules, and constraints."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Model Relationships",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-N8n-Api-Key",
+								"value": "{{api_secret}}",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/n8n/models/{{model_class}}/relationships",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"n8n",
+								"models",
+								"{{model_class}}",
+								"relationships"
+							]
+						},
+						"description": "Get model relationships (hasMany, belongsTo, etc.)."
 					},
 					"response": []
 				},
@@ -102,12 +207,80 @@
 								"properties"
 							]
 						},
-						"description": "Get detailed properties for a specific model including column types, nullable status, and validation rules."
+						"description": "Get detailed properties including column types, nullable status, and validation rules."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Validation Rules",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-N8n-Api-Key",
+								"value": "{{api_secret}}",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/n8n/models/{{model_class}}/validation-rules",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"n8n",
+								"models",
+								"{{model_class}}",
+								"validation-rules"
+							]
+						},
+						"description": "Get validation rules for model fields."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Field Dependencies",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-N8n-Api-Key",
+								"value": "{{api_secret}}",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/n8n/models/{{model_class}}/fields/{{field_name}}/dependencies",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"n8n",
+								"models",
+								"{{model_class}}",
+								"fields",
+								"{{field_name}}",
+								"dependencies"
+							]
+						},
+						"description": "Get dependencies for a specific field."
 					},
 					"response": []
 				}
 			],
-			"description": "Endpoints for discovering available models and their metadata."
+			"description": "Enhanced endpoints for discovering models and their detailed metadata."
 		},
 		{
 			"name": "📖 CRUD Operations - Read",
@@ -208,12 +381,12 @@
 								}
 							]
 						},
-						"description": "Get records with filters, sorting, and pagination."
+						"description": "Get records with advanced filtering and sorting."
 					},
 					"response": []
 				},
 				{
-					"name": "Get Specific Record",
+					"name": "Get Single Record",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -247,13 +420,13 @@
 					"response": []
 				}
 			],
-			"description": "Read operations for retrieving model records."
+			"description": "Read operations for model records."
 		},
 		{
 			"name": "✏️ CRUD Operations - Create",
 			"item": [
 				{
-					"name": "Create New Record",
+					"name": "Create User Record",
 					"request": {
 						"method": "POST",
 						"header": [
@@ -275,59 +448,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"name\": \"John Doe\",\n    \"email\": \"john.doe@example.com\",\n    \"password\": \"password123\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{base_url}}/api/n8n/models/{{model_class}}/records",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"n8n",
-								"models",
-								"{{model_class}}",
-								"records"
-							]
-						},
-						"description": "Create a new record. Only fillable attributes will be accepted."
-					},
-					"response": []
-				},
-				{
-					"name": "Create User Example",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "X-N8n-Api-Key",
-								"value": "{{api_secret}}",
-								"type": "text"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json",
-								"type": "text"
-							},
-							{
-								"key": "Accept",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"name\": \"Jane Smith\",\n    \"email\": \"jane.smith@example.com\",\n    \"password\": \"securepassword\",\n    \"email_verified_at\": \"2024-01-15 10:30:00\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
+							"raw": "{\n    \"name\": \"John Doe\",\n    \"email\": \"john.doe@example.com\",\n    \"password\": \"securepassword123\"\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/api/n8n/models/App%5CModels%5CUser/records",
@@ -342,12 +463,96 @@
 								"records"
 							]
 						},
-						"description": "Example of creating a User record with URL-encoded model class."
+						"description": "Create a new User record."
+					},
+					"response": []
+				},
+				{
+					"name": "Create UserCounter Record",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-N8n-Api-Key",
+								"value": "{{api_secret}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"user_registrations\",\n    \"count\": 0,\n    \"description\": \"Count of user registrations\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/n8n/models/App%5CModels%5CUserCounter/records",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"n8n",
+								"models",
+								"App%5CModels%5CUserCounter",
+								"records"
+							]
+						},
+						"description": "Create a new UserCounter record."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Generic Record",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-N8n-Api-Key",
+								"value": "{{api_secret}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"field1\": \"value1\",\n    \"field2\": \"value2\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/n8n/models/{{model_class}}/records",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"n8n",
+								"models",
+								"{{model_class}}",
+								"records"
+							]
+						},
+						"description": "Create a new record for any model."
 					},
 					"response": []
 				}
 			],
-			"description": "Create operations for adding new model records."
+			"description": "Create operations for model records."
 		},
 		{
 			"name": "🔄 CRUD Operations - Update",
@@ -375,12 +580,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"name\": \"John Doe Updated\",\n    \"email\": \"john.updated@example.com\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
+							"raw": "{\n    \"name\": \"Updated Name\",\n    \"email\": \"updated@example.com\"\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/api/n8n/models/{{model_class}}/records/{{record_id}}",
@@ -396,12 +596,12 @@
 								"{{record_id}}"
 							]
 						},
-						"description": "Update an existing record by ID. Only provided fields will be updated."
+						"description": "Update an existing record."
 					},
 					"response": []
 				},
 				{
-					"name": "Partial Update Example",
+					"name": "Update UserCounter",
 					"request": {
 						"method": "PUT",
 						"header": [
@@ -423,15 +623,10 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"name\": \"Updated Name Only\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
+							"raw": "{\n    \"count\": 100\n}"
 						},
 						"url": {
-							"raw": "{{base_url}}/api/n8n/models/App%5CModels%5CUser/records/1",
+							"raw": "{{base_url}}/api/n8n/models/App%5CModels%5CUserCounter/records/{{record_id}}",
 							"host": [
 								"{{base_url}}"
 							],
@@ -439,17 +634,17 @@
 								"api",
 								"n8n",
 								"models",
-								"App%5CModels%5CUser",
+								"App%5CModels%5CUserCounter",
 								"records",
-								"1"
+								"{{record_id}}"
 							]
 						},
-						"description": "Example of partial update - only updating the name field."
+						"description": "Update a UserCounter record."
 					},
 					"response": []
 				}
 			],
-			"description": "Update operations for modifying existing model records."
+			"description": "Update operations for model records."
 		},
 		{
 			"name": "🗑️ CRUD Operations - Delete",
@@ -484,52 +679,18 @@
 								"{{record_id}}"
 							]
 						},
-						"description": "Delete a record by ID. This will trigger the 'deleted' event if configured."
-					},
-					"response": []
-				},
-				{
-					"name": "Delete User Example",
-					"request": {
-						"method": "DELETE",
-						"header": [
-							{
-								"key": "X-N8n-Api-Key",
-								"value": "{{api_secret}}",
-								"type": "text"
-							},
-							{
-								"key": "Accept",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"url": {
-							"raw": "{{base_url}}/api/n8n/models/App%5CModels%5CUser/records/1",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"n8n",
-								"models",
-								"App%5CModels%5CUser",
-								"records",
-								"1"
-							]
-						},
-						"description": "Example of deleting a User record with ID 1."
+						"description": "Delete a specific record."
 					},
 					"response": []
 				}
 			],
-			"description": "Delete operations for removing model records."
+			"description": "Delete operations for model records."
 		},
 		{
 			"name": "🔗 Webhook Management",
 			"item": [
 				{
-					"name": "Subscribe to Webhook",
+					"name": "Create Webhook Subscription",
 					"request": {
 						"method": "POST",
 						"header": [
@@ -551,12 +712,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"model\": \"App\\\\Models\\\\User\",\n    \"events\": [\"created\", \"updated\", \"deleted\"],\n    \"webhook_url\": \"http://localhost:5678/webhook/user-events\",\n    \"properties\": [\"name\", \"email\"]\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
+							"raw": "{\n    \"model\": \"App\\\\Models\\\\User\",\n    \"events\": [\"created\", \"updated\"],\n    \"webhook_url\": \"http://localhost:5678/webhook/user-events\",\n    \"properties\": [\"name\", \"email\"]\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/api/n8n/webhooks/subscribe",
@@ -570,58 +726,12 @@
 								"subscribe"
 							]
 						},
-						"description": "Subscribe to model events. Will receive notifications when specified events occur."
+						"description": "Create a new webhook subscription with database persistence."
 					},
 					"response": []
 				},
 				{
-					"name": "Unsubscribe from Webhook",
-					"request": {
-						"method": "DELETE",
-						"header": [
-							{
-								"key": "X-N8n-Api-Key",
-								"value": "{{api_secret}}",
-								"type": "text"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json",
-								"type": "text"
-							},
-							{
-								"key": "Accept",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"subscription_id\": \"{{subscription_id}}\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{base_url}}/api/n8n/webhooks/unsubscribe",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"n8n",
-								"webhooks",
-								"unsubscribe"
-							]
-						},
-						"description": "Unsubscribe from webhook notifications using subscription ID."
-					},
-					"response": []
-				},
-				{
-					"name": "List All Webhooks",
+					"name": "Get All Webhook Subscriptions",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -652,7 +762,7 @@
 					"response": []
 				},
 				{
-					"name": "List Webhooks with Filters",
+					"name": "Get Webhook Subscription",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -668,29 +778,183 @@
 							}
 						],
 						"url": {
-							"raw": "{{base_url}}/api/n8n/webhooks?model=App%5CModels%5CUser&event=created",
+							"raw": "{{base_url}}/api/n8n/webhooks/{{subscription_id}}",
 							"host": [
 								"{{base_url}}"
 							],
 							"path": [
 								"api",
 								"n8n",
-								"webhooks"
-							],
-							"query": [
-								{
-									"key": "model",
-									"value": "App%5CModels%5CUser",
-									"description": "Filter by model class"
-								},
-								{
-									"key": "event",
-									"value": "created",
-									"description": "Filter by event type"
-								}
+								"webhooks",
+								"{{subscription_id}}"
 							]
 						},
-						"description": "Get webhook subscriptions filtered by model and/or event."
+						"description": "Get a specific webhook subscription by ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Webhook Subscription",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "X-N8n-Api-Key",
+								"value": "{{api_secret}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"events\": [\"created\", \"updated\", \"deleted\"],\n    \"webhook_url\": \"http://localhost:5678/webhook/user-all-events\",\n    \"properties\": [\"name\", \"email\", \"created_at\"]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/n8n/webhooks/{{subscription_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"n8n",
+								"webhooks",
+								"{{subscription_id}}"
+							]
+						},
+						"description": "Update an existing webhook subscription."
+					},
+					"response": []
+				},
+				{
+					"name": "Test Webhook Subscription",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-N8n-Api-Key",
+								"value": "{{api_secret}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"test_data\": {\n        \"id\": 1,\n        \"name\": \"Test User\",\n        \"email\": \"test@example.com\"\n    }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/n8n/webhooks/{{subscription_id}}/test",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"n8n",
+								"webhooks",
+								"{{subscription_id}}",
+								"test"
+							]
+						},
+						"description": "Test a webhook subscription by sending test data."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Webhook Subscription",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "X-N8n-Api-Key",
+								"value": "{{api_secret}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"model\": \"App\\\\Models\\\\User\",\n    \"events\": [\"created\"],\n    \"webhook_url\": \"http://localhost:5678/webhook/user-events\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/n8n/webhooks/unsubscribe",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"n8n",
+								"webhooks",
+								"unsubscribe"
+							]
+						},
+						"description": "Remove a webhook subscription."
+					},
+					"response": []
+				},
+				{
+					"name": "Bulk Webhook Operations",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-N8n-Api-Key",
+								"value": "{{api_secret}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"operation\": \"create\",\n    \"subscriptions\": [\n        {\n            \"model\": \"App\\\\Models\\\\User\",\n            \"events\": [\"created\"],\n            \"webhook_url\": \"http://localhost:5678/webhook/user-created\",\n            \"properties\": [\"name\", \"email\"]\n        },\n        {\n            \"model\": \"App\\\\Models\\\\UserCounter\",\n            \"events\": [\"updated\"],\n            \"webhook_url\": \"http://localhost:5678/webhook/counter-updated\",\n            \"properties\": [\"count\"]\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/n8n/webhooks/bulk",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"n8n",
+								"webhooks",
+								"bulk"
+							]
+						},
+						"description": "Perform bulk webhook operations (create, update, delete)."
 					},
 					"response": []
 				},
@@ -722,175 +986,18 @@
 								"stats"
 							]
 						},
-						"description": "Get webhook usage statistics and metrics."
-					},
-					"response": []
-				},
-				{
-					"name": "Get Specific Webhook",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "X-N8n-Api-Key",
-								"value": "{{api_secret}}",
-								"type": "text"
-							},
-							{
-								"key": "Accept",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"url": {
-							"raw": "{{base_url}}/api/n8n/webhooks/{{subscription_id}}",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"n8n",
-								"webhooks",
-								"{{subscription_id}}"
-							]
-						},
-						"description": "Get details of a specific webhook subscription."
-					},
-					"response": []
-				},
-				{
-					"name": "Update Webhook",
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "X-N8n-Api-Key",
-								"value": "{{api_secret}}",
-								"type": "text"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json",
-								"type": "text"
-							},
-							{
-								"key": "Accept",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"events\": [\"created\", \"updated\"],\n    \"webhook_url\": \"http://localhost:5678/webhook/updated-user-events\",\n    \"properties\": [\"name\", \"email\", \"updated_at\"],\n    \"active\": true\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{base_url}}/api/n8n/webhooks/{{subscription_id}}",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"n8n",
-								"webhooks",
-								"{{subscription_id}}"
-							]
-						},
-						"description": "Update an existing webhook subscription."
-					},
-					"response": []
-				},
-				{
-					"name": "Test Webhook",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "X-N8n-Api-Key",
-								"value": "{{api_secret}}",
-								"type": "text"
-							},
-							{
-								"key": "Accept",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"url": {
-							"raw": "{{base_url}}/api/n8n/webhooks/{{subscription_id}}/test",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"n8n",
-								"webhooks",
-								"{{subscription_id}}",
-								"test"
-							]
-						},
-						"description": "Send a test webhook notification to verify the endpoint is working."
-					},
-					"response": []
-				},
-				{
-					"name": "Bulk Webhook Operations",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "X-N8n-Api-Key",
-								"value": "{{api_secret}}",
-								"type": "text"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json",
-								"type": "text"
-							},
-							{
-								"key": "Accept",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"action\": \"activate\",\n    \"subscription_ids\": [\"sub_1\", \"sub_2\", \"sub_3\"]\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{base_url}}/api/n8n/webhooks/bulk",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"n8n",
-								"webhooks",
-								"bulk"
-							]
-						},
-						"description": "Perform bulk operations on multiple webhooks. Actions: activate, deactivate, delete."
+						"description": "Get webhook subscription statistics."
 					},
 					"response": []
 				}
 			],
-			"description": "Webhook management endpoints for subscribing to model events."
+			"description": "Enhanced webhook management with database persistence and bulk operations."
 		},
 		{
-			"name": "🧪 Testing & Examples",
+			"name": "🏥 Health Monitoring",
 			"item": [
 				{
-					"name": "Health Check",
+					"name": "System Health Check",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -906,48 +1013,22 @@
 							}
 						],
 						"url": {
-							"raw": "{{base_url}}/api/n8n/models",
+							"raw": "{{base_url}}/api/n8n/health",
 							"host": [
 								"{{base_url}}"
 							],
 							"path": [
 								"api",
 								"n8n",
-								"models"
+								"health"
 							]
 						},
-						"description": "Basic health check to verify API is working and authentication is correct."
+						"description": "Get overall system health status with subscription statistics and recommendations."
 					},
 					"response": []
 				},
 				{
-					"name": "Test Authentication Error",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"url": {
-							"raw": "{{base_url}}/api/n8n/models",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"n8n",
-								"models"
-							]
-						},
-						"description": "Test request without API key to verify authentication is working."
-					},
-					"response": []
-				},
-				{
-					"name": "Test Rate Limiting",
+					"name": "Detailed Health Report",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -963,22 +1044,184 @@
 							}
 						],
 						"url": {
-							"raw": "{{base_url}}/api/n8n/models",
+							"raw": "{{base_url}}/api/n8n/health/detailed",
 							"host": [
 								"{{base_url}}"
 							],
 							"path": [
 								"api",
 								"n8n",
-								"models"
+								"health",
+								"detailed"
 							]
 						},
-						"description": "Make multiple rapid requests to test rate limiting (60 requests per minute by default)."
+						"description": "Get detailed health report with comprehensive system metrics."
+					},
+					"response": []
+				},
+				{
+					"name": "Health Analytics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-N8n-Api-Key",
+								"value": "{{api_secret}}",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/n8n/health/analytics",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"n8n",
+								"health",
+								"analytics"
+							]
+						},
+						"description": "Get health analytics and trends over time."
+					},
+					"response": []
+				},
+				{
+					"name": "Validate Specific Subscription",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-N8n-Api-Key",
+								"value": "{{api_secret}}",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/n8n/health/validate/{{subscription_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"n8n",
+								"health",
+								"validate",
+								"{{subscription_id}}"
+							]
+						},
+						"description": "Validate a specific webhook subscription health."
 					},
 					"response": []
 				}
 			],
-			"description": "Testing endpoints and examples for validation."
+			"description": "Comprehensive health monitoring and analytics for the n8n-Eloquent system."
+		},
+		{
+			"name": "🧪 Testing & Validation",
+			"item": [
+				{
+					"name": "Comprehensive API Test",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-N8n-Api-Key",
+								"value": "{{api_secret}}",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/n8n/models",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"n8n",
+								"models"
+							]
+						},
+						"description": "Basic connectivity test - should return list of available models."
+					},
+					"response": []
+				},
+				{
+					"name": "Authentication Test (Should Fail)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/n8n/models",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"n8n",
+								"models"
+							]
+						},
+						"description": "Test without API key - should return 401 Unauthorized."
+					},
+					"response": []
+				},
+				{
+					"name": "Invalid Model Test (Should Fail)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-N8n-Api-Key",
+								"value": "{{api_secret}}",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/n8n/models/InvalidModel/records",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"n8n",
+								"models",
+								"InvalidModel",
+								"records"
+							]
+						},
+						"description": "Test with invalid model - should return 404 Not Found."
+					},
+					"response": []
+				}
+			],
+			"description": "Test endpoints for validation and debugging."
 		}
 	],
 	"event": [
@@ -987,13 +1230,8 @@
 			"script": {
 				"type": "text/javascript",
 				"exec": [
-					"// Auto-generate timestamps for testing",
-					"pm.globals.set('timestamp', new Date().toISOString());",
-					"",
-					"// Log request details for debugging",
-					"console.log('Making request to:', pm.request.url.toString());",
-					"console.log('Method:', pm.request.method);",
-					"console.log('Headers:', pm.request.headers.toJSON());"
+					"// Auto-set timestamp for dynamic data",
+					"pm.globals.set('timestamp', Date.now());"
 				]
 			}
 		},
@@ -1003,38 +1241,26 @@
 				"type": "text/javascript",
 				"exec": [
 					"// Basic response validation",
-					"pm.test('Response status code is valid', function () {",
-					"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204, 400, 401, 404, 422, 500]);",
+					"pm.test('Response status code is successful', function () {",
+					"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 202]);",
 					"});",
 					"",
-					"// Check response time",
-					"pm.test('Response time is reasonable', function () {",
+					"pm.test('Response has JSON content-type', function () {",
+					"    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+					"});",
+					"",
+					"pm.test('Response time is acceptable', function () {",
 					"    pm.expect(pm.response.responseTime).to.be.below(5000);",
 					"});",
 					"",
-					"// Validate JSON response structure",
-					"if (pm.response.headers.get('Content-Type') && pm.response.headers.get('Content-Type').includes('application/json')) {",
-					"    pm.test('Response is valid JSON', function () {",
-					"        pm.response.to.have.jsonBody();",
-					"    });",
-					"}",
-					"",
-					"// Log response for debugging",
-					"console.log('Response status:', pm.response.status);",
-					"console.log('Response time:', pm.response.responseTime + 'ms');",
-					"",
-					"// Store useful data for subsequent requests",
-					"if (pm.response.code === 200 || pm.response.code === 201) {",
-					"    const responseJson = pm.response.json();",
-					"    ",
-					"    // Store record ID if created/retrieved",
-					"    if (responseJson.data && responseJson.data.id) {",
-					"        pm.globals.set('last_record_id', responseJson.data.id);",
+					"// Auto-extract common values for chaining requests",
+					"if (pm.response.json() && pm.response.json().data) {",
+					"    const data = pm.response.json().data;",
+					"    if (data.id) {",
+					"        pm.globals.set('last_record_id', data.id);",
 					"    }",
-					"    ",
-					"    // Store subscription ID for webhook operations",
-					"    if (responseJson.subscription && responseJson.subscription.id) {",
-					"        pm.globals.set('last_subscription_id', responseJson.subscription.id);",
+					"    if (data.subscription && data.subscription.id) {",
+					"        pm.globals.set('last_subscription_id', data.subscription.id);",
 					"    }",
 					"}"
 				]
@@ -1044,33 +1270,35 @@
 	"variable": [
 		{
 			"key": "base_url",
-			"value": "http://127.0.0.1:8000",
-			"type": "string",
-			"description": "Base URL for your Laravel application"
+			"value": "http://127.0.0.1:8002",
+			"type": "string"
 		},
 		{
 			"key": "api_secret",
-			"value": "your-api-secret-here",
-			"type": "string",
-			"description": "Your n8n-eloquent API secret key"
+			"value": "test-secret-key-for-integration",
+			"type": "string"
 		},
 		{
 			"key": "model_class",
 			"value": "App%5CModels%5CUser",
 			"type": "string",
-			"description": "URL-encoded model class name (App\\Models\\User)"
+			"description": "URL-encoded model class name"
 		},
 		{
 			"key": "record_id",
 			"value": "1",
-			"type": "string",
-			"description": "Record ID for testing specific record operations"
+			"type": "string"
 		},
 		{
 			"key": "subscription_id",
-			"value": "webhook-subscription-id",
+			"value": "",
 			"type": "string",
-			"description": "Webhook subscription ID for testing webhook operations"
+			"description": "Will be auto-populated from webhook creation responses"
+		},
+		{
+			"key": "field_name",
+			"value": "name",
+			"type": "string"
 		}
 	]
 } 
