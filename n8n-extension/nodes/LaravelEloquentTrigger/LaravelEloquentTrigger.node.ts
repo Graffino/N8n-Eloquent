@@ -7,7 +7,6 @@ import {
 	NodeConnectionType,
 	NodeOperationError,
 	IHookFunctions,
-	IHttpRequestMethods,
 	ILoadOptionsFunctions,
 	INodePropertyOptions,
 } from 'n8n-workflow';
@@ -127,18 +126,14 @@ export class LaravelEloquentTrigger implements INodeType {
 	methods = {
 		loadOptions: {
 			async getModels(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
-				const credentials = await this.getCredentials('laravelEloquentApi');
-				const baseUrl = credentials.baseUrl as string;
-				const apiKey = credentials.apiKey as string;
-
 				try {
-					const response = await this.helpers.request({
+					const credentials = await this.getCredentials('laravelEloquentApi');
+					const baseUrl = credentials.baseUrl as string;
+					
+					const response = await this.helpers.httpRequestWithAuthentication.call(this, 'laravelEloquentApi', {
 						method: 'GET',
 						url: `${baseUrl}/api/n8n/models`,
-						headers: {
-							'X-N8n-Api-Key': apiKey,
-							'Content-Type': 'application/json',
-						},
+						json: true,
 					});
 
 					return response.models.map((model: any) => ({
@@ -171,18 +166,14 @@ export class LaravelEloquentTrigger implements INodeType {
 		});
 		
 		try {
-			const credentials = await this.getCredentials('laravelEloquentApi');
 			const model = this.getNodeParameter('model') as string;
 			const events = this.getNodeParameter('events') as string[];
 			const webhookUrl = this.getNodeWebhookUrl('default');
 
 			console.log('📋 Registration details:', {
-				baseUrl: credentials.baseUrl,
 				model: model,
 				events: events,
 				webhookUrl: webhookUrl,
-				hasApiKey: !!credentials.apiKey,
-				apiKeyLength: credentials.apiKey ? (credentials.apiKey as string).length : 0,
 			});
 
 			// Validate required parameters
@@ -202,27 +193,18 @@ export class LaravelEloquentTrigger implements INodeType {
 				webhook_url: webhookUrl,
 			};
 
-			const options = {
-				method: 'POST' as IHttpRequestMethods,
-				headers: {
-					'Content-Type': 'application/json',
-					'Accept': 'application/json',
-					'X-N8n-Api-Key': credentials.apiKey as string,
-				},
-				body: JSON.stringify(requestBody),
-				uri: `${credentials.baseUrl}/api/n8n/webhooks/subscribe`,
-				json: true,
-			};
-
-			console.log('🌐 Making request to:', options.uri);
+			console.log('🌐 Making authenticated request to webhook subscription endpoint');
 			console.log('📦 Request body:', requestBody);
-			console.log('🔑 Request headers:', {
-				'Content-Type': options.headers['Content-Type'],
-				'Accept': options.headers['Accept'],
-				'X-N8n-Api-Key': options.headers['X-N8n-Api-Key'] ? '***' + (options.headers['X-N8n-Api-Key'] as string).slice(-4) : 'missing',
-			});
 
-			const response = await this.helpers.request(options);
+			const credentials = await this.getCredentials('laravelEloquentApi');
+			const baseUrl = credentials.baseUrl as string;
+
+			const response = await this.helpers.httpRequestWithAuthentication.call(this, 'laravelEloquentApi', {
+				method: 'POST',
+				url: `${baseUrl}/api/n8n/webhooks/subscribe`,
+				body: requestBody,
+				json: true,
+			});
 			
 			console.log('✅ Registration response:', response);
 			
@@ -268,7 +250,6 @@ export class LaravelEloquentTrigger implements INodeType {
 		// This method is called when the workflow is deactivated or the node is deleted
 		// It should unregister the webhook from the Laravel application
 		
-		const credentials = await this.getCredentials('laravelEloquentApi');
 		const webhookData = this.getWorkflowStaticData('node');
 		
 		// Check if we have a subscription ID to delete
@@ -277,22 +258,18 @@ export class LaravelEloquentTrigger implements INodeType {
 			return true;
 		}
 
-		const options = {
-			method: 'DELETE' as IHttpRequestMethods,
-			headers: {
-				'Content-Type': 'application/json',
-				'Accept': 'application/json',
-				'X-N8n-Api-Key': credentials.apiKey as string,
-			},
-			body: JSON.stringify({
-				subscription_id: webhookData.subscriptionId,
-			}),
-			uri: `${credentials.baseUrl}/api/n8n/webhooks/unsubscribe`,
-			json: true,
-		};
-
 		try {
-			await this.helpers.request(options);
+			const credentials = await this.getCredentials('laravelEloquentApi');
+			const baseUrl = credentials.baseUrl as string;
+			
+			await this.helpers.httpRequestWithAuthentication.call(this, 'laravelEloquentApi', {
+				method: 'DELETE',
+				url: `${baseUrl}/api/n8n/webhooks/unsubscribe`,
+				body: {
+					subscription_id: webhookData.subscriptionId,
+				},
+				json: true,
+			});
 			
 			// Clear the subscription ID
 			delete webhookData.subscriptionId;

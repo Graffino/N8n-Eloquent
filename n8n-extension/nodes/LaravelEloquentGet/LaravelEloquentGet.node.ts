@@ -6,6 +6,8 @@ import {
 	INodeExecutionData,
 	NodeConnectionType,
 	NodeOperationError,
+	ILoadOptionsFunctions,
+	INodePropertyOptions,
 } from 'n8n-workflow';
 
 export class LaravelEloquentGet implements INodeType {
@@ -178,6 +180,30 @@ export class LaravelEloquentGet implements INodeType {
 		],
 	};
 
+	methods = {
+		loadOptions: {
+			async getModels(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				try {
+					const credentials = await this.getCredentials('laravelEloquentApi');
+					const baseUrl = credentials.baseUrl as string;
+					
+					const response = await this.helpers.httpRequestWithAuthentication.call(this, 'laravelEloquentApi', {
+						method: 'GET',
+						url: `${baseUrl}/api/n8n/models`,
+						json: true,
+					});
+
+					return response.models.map((model: any) => ({
+						name: model.name,
+						value: model.class,
+					}));
+				} catch (error) {
+					throw new NodeOperationError(this.getNode(), `Failed to load models: ${(error as Error).message}`);
+				}
+			},
+		},
+	};
+
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 		const items = this.getInputData();
 		const returnData: INodeExecutionData[] = [];
@@ -189,7 +215,6 @@ export class LaravelEloquentGet implements INodeType {
 			try {
 				operation = this.getNodeParameter('operation', i) as string;
 				model = this.getNodeParameter('model', i) as string;
-				const credentials = await this.getCredentials('laravelEloquentApi', i);
 
 				let endpoint = '';
 				const queryParams: IDataObject = {};
@@ -235,20 +260,16 @@ export class LaravelEloquentGet implements INodeType {
 					queryParams.with = withRelations;
 				}
 
-				// Make the API request
-				const options = {
-					method: 'GET' as const,
-					url: `${credentials.baseUrl}${endpoint}`,
-					headers: {
-						'X-N8n-Api-Key': credentials.apiKey,
-						'Content-Type': 'application/json',
-						'Accept': 'application/json',
-					},
+				// Make the authenticated API request
+				const credentials = await this.getCredentials('laravelEloquentApi');
+				const baseUrl = credentials.baseUrl as string;
+				
+				const response = await this.helpers.httpRequestWithAuthentication.call(this, 'laravelEloquentApi', {
+					method: 'GET',
+					url: `${baseUrl}${endpoint}`,
 					qs: queryParams,
 					json: true,
-				};
-
-				const response = await this.helpers.request(options);
+				});
 
 				// Handle the response
 				if (operation === 'getById') {

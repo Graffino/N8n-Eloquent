@@ -124,23 +124,18 @@ export class LaravelEloquentSet implements INodeType {
 	methods = {
 		loadOptions: {
 			async getModels(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
-				const credentials = await this.getCredentials('laravelEloquentApi');
-				const baseUrl = credentials.baseUrl as string;
-				const apiKey = credentials.apiKey as string;
-
 				try {
-					const response = await this.helpers.request({
+					const credentials = await this.getCredentials('laravelEloquentApi');
+					
+					const response = await this.helpers.httpRequestWithAuthentication.call(this, 'laravelEloquentApi', {
 						method: 'GET',
-						url: `${baseUrl}/api/n8n/models`,
-						headers: {
-							'Authorization': `Bearer ${apiKey}`,
-							'Content-Type': 'application/json',
-						},
+						url: `${credentials.baseUrl}/api/n8n/models`,
+						json: true,
 					});
 
 					return response.models.map((model: any) => ({
 						name: model.name,
-						value: model.name,
+						value: model.class,
 					}));
 				} catch (error) {
 					throw new NodeOperationError(this.getNode(), `Failed to load models: ${(error as Error).message}`);
@@ -157,11 +152,8 @@ export class LaravelEloquentSet implements INodeType {
 			try {
 				const operation = this.getNodeParameter('operation', i) as string;
 				const model = this.getNodeParameter('model', i) as string;
-				const credentials = await this.getCredentials('laravelEloquentApi');
-				const baseUrl = credentials.baseUrl as string;
-				const apiKey = credentials.apiKey as string;
 
-				let endpoint = `${baseUrl}/api/n8n/models/${model}`;
+				let endpoint = `/api/n8n/models/${encodeURIComponent(model)}`;
 				let method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'POST';
 				let body: any = {};
 
@@ -174,7 +166,7 @@ export class LaravelEloquentSet implements INodeType {
 				} else if (operation === 'update') {
 					const recordId = this.getNodeParameter('recordId', i) as string;
 					const fields = this.getNodeParameter('fields.field', i, []) as Array<{name: string, value: string}>;
-					endpoint = `${baseUrl}/api/n8n/models/${model}/${recordId}`;
+					endpoint = `/api/n8n/models/${encodeURIComponent(model)}/${encodeURIComponent(recordId)}`;
 					method = 'PUT';
 					body = {};
 					fields.forEach(field => {
@@ -182,18 +174,16 @@ export class LaravelEloquentSet implements INodeType {
 					});
 				} else if (operation === 'delete') {
 					const recordId = this.getNodeParameter('recordId', i) as string;
-					endpoint = `${baseUrl}/api/n8n/models/${model}/${recordId}`;
+					endpoint = `/api/n8n/models/${encodeURIComponent(model)}/${encodeURIComponent(recordId)}`;
 					method = 'DELETE';
 				}
 
-				const response = await this.helpers.request({
+				const credentials = await this.getCredentials('laravelEloquentApi');
+				const response = await this.helpers.httpRequestWithAuthentication.call(this, 'laravelEloquentApi', {
 					method,
-					url: endpoint,
-					headers: {
-						'Authorization': `Bearer ${apiKey}`,
-						'Content-Type': 'application/json',
-					},
+					url: `${credentials.baseUrl}${endpoint}`,
 					body,
+					json: true,
 				});
 
 				returnData.push({

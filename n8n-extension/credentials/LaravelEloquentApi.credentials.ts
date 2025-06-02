@@ -59,6 +59,11 @@ export class LaravelEloquentApi implements ICredentialType {
 			baseURL: '={{$credentials.baseUrl}}',
 			url: '/api/n8n/models',
 			method: 'GET',
+			headers: {
+				'X-N8n-Api-Key': '={{$credentials.apiKey}}',
+				'Content-Type': 'application/json',
+				'Accept': 'application/json',
+			},
 		},
 	};
 } 
