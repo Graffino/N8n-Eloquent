@@ -6,6 +6,8 @@ import {
 	IWebhookResponseData,
 	NodeConnectionType,
 	NodeOperationError,
+	IHookFunctions,
+	IHttpRequestMethods,
 } from 'n8n-workflow';
 
 import { createHmac, timingSafeEqual } from 'crypto';
@@ -117,6 +119,98 @@ export class LaravelEloquentTrigger implements INodeType {
 			},
 		],
 	};
+
+	// Webhook lifecycle methods for automatic registration/unregistration
+	async webhookCheckForExistingData(this: IHookFunctions): Promise<boolean> {
+		// This method is called when the workflow is activated
+		// Return false to indicate we don't have existing data to process
+		return false;
+	}
+
+	async webhookCreate(this: IHookFunctions): Promise<boolean> {
+		// This method is called when the workflow is activated or saved
+		// It should register the webhook with the Laravel application
+		
+		const credentials = await this.getCredentials('laravelEloquentApi');
+		const model = this.getNodeParameter('model') as string;
+		const events = this.getNodeParameter('events') as string[];
+		const webhookUrl = this.getNodeWebhookUrl('default');
+
+		const options = {
+			method: 'POST' as IHttpRequestMethods,
+			headers: {
+				'Content-Type': 'application/json',
+				'Accept': 'application/json',
+				'X-N8n-Api-Key': credentials.apiKey as string,
+			},
+			body: JSON.stringify({
+				model: model,
+				events: events,
+				webhook_url: webhookUrl,
+			}),
+			uri: `${credentials.baseUrl}/api/n8n/webhooks/subscribe`,
+			json: true,
+		};
+
+		try {
+			const response = await this.helpers.request(options);
+			
+			// Store the subscription ID for later cleanup
+			if (response.subscription && response.subscription.id) {
+				const webhookData = this.getWorkflowStaticData('node');
+				webhookData.subscriptionId = response.subscription.id;
+			}
+			
+			console.log('Laravel Eloquent webhook registered successfully:', response);
+			return true;
+		} catch (error) {
+			console.error('Failed to register Laravel Eloquent webhook:', error);
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			throw new NodeOperationError(this.getNode(), `Failed to register webhook: ${errorMessage}`);
+		}
+	}
+
+	async webhookDelete(this: IHookFunctions): Promise<boolean> {
+		// This method is called when the workflow is deactivated or the node is deleted
+		// It should unregister the webhook from the Laravel application
+		
+		const credentials = await this.getCredentials('laravelEloquentApi');
+		const webhookData = this.getWorkflowStaticData('node');
+		
+		// Check if we have a subscription ID to delete
+		if (!webhookData.subscriptionId) {
+			console.log('No subscription ID found, skipping webhook deletion');
+			return true;
+		}
+
+		const options = {
+			method: 'DELETE' as IHttpRequestMethods,
+			headers: {
+				'Content-Type': 'application/json',
+				'Accept': 'application/json',
+				'X-N8n-Api-Key': credentials.apiKey as string,
+			},
+			body: JSON.stringify({
+				subscription_id: webhookData.subscriptionId,
+			}),
+			uri: `${credentials.baseUrl}/api/n8n/webhooks/unsubscribe`,
+			json: true,
+		};
+
+		try {
+			await this.helpers.request(options);
+			
+			// Clear the subscription ID
+			delete webhookData.subscriptionId;
+			
+			console.log('Laravel Eloquent webhook unregistered successfully');
+			return true;
+		} catch (error) {
+			console.error('Failed to unregister Laravel Eloquent webhook:', error);
+			// Don't throw error here as it might prevent workflow deactivation
+			return true;
+		}
+	}
 
 	async webhook(this: IWebhookFunctions): Promise<IWebhookResponseData> {
 		const bodyData = this.getBodyData() as IDataObject;
@@ -278,6 +372,4 @@ export class LaravelEloquentTrigger implements INodeType {
 			],
 		};
 	}
-
-
 } 

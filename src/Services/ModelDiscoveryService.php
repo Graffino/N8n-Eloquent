@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use ReflectionClass;
+use Illuminate\Support\Facades\Schema;
 
 class ModelDiscoveryService
 {
@@ -200,32 +201,34 @@ class ModelDiscoveryService
             // Get an instance of the model
             $model = App::make($modelClass);
             
-            // Connect to the database to get column information
+            // Get table information using Laravel's Schema facade
             $table = $model->getTable();
             $connection = $model->getConnection();
-            $schema = $connection->getDoctrineSchemaManager();
             
-            // Doctrine Schema does not support JSON columns in some DB drivers
-            $schema->getDatabasePlatform()->registerDoctrineTypeMapping('enum', 'string');
-            $schema->getDatabasePlatform()->registerDoctrineTypeMapping('json', 'text');
-            
-            // Get column information
-            $columns = $schema->listTableColumns($table);
+            // Get column information using Laravel's Schema
+            $columns = Schema::connection($connection->getName())->getColumnListing($table);
+            $columnTypes = Schema::connection($connection->getName())->getColumns($table);
             
             $properties = [];
-            foreach ($columns as $column) {
-                $name = $column->getName();
-                $type = $column->getType()->getName();
-                $nullable = !$column->getNotnull();
-                $default = $column->getDefault();
+            foreach ($columns as $columnName) {
+                // Find the column details
+                $columnDetails = collect($columnTypes)->firstWhere('name', $columnName);
                 
-                $properties[$name] = [
-                    'name' => $name,
+                if (!$columnDetails) {
+                    continue;
+                }
+                
+                $type = $columnDetails['type_name'] ?? 'string';
+                $nullable = $columnDetails['nullable'] ?? false;
+                $default = $columnDetails['default'] ?? null;
+                
+                $properties[$columnName] = [
+                    'name' => $columnName,
                     'type' => $type,
                     'nullable' => $nullable,
                     'default' => $default,
-                    'fillable' => in_array($name, $model->getFillable()),
-                    'primary' => $name === $model->getKeyName(),
+                    'fillable' => in_array($columnName, $model->getFillable()),
+                    'primary' => $columnName === $model->getKeyName(),
                 ];
             }
             
