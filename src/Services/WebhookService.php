@@ -5,15 +5,23 @@ namespace N8n\Eloquent\Services;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use N8n\Eloquent\Models\WebhookSubscription;
 
 class WebhookService
 {
     /**
-     * The cache key for webhook subscriptions.
+     * Cache key for storing webhook subscriptions.
      *
      * @var string
      */
-    protected $cacheKey = 'n8n_eloquent_webhook_subscriptions';
+    protected string $cacheKey = 'n8n_webhook_subscriptions';
+
+    /**
+     * Cache TTL in seconds (1 hour).
+     *
+     * @var int
+     */
+    protected int $cacheTtl = 3600;
 
     /**
      * Subscribe to model events.
@@ -30,36 +38,26 @@ class WebhookService
         string $webhookUrl,
         array $properties = []
     ): array {
-        // Generate a unique subscription ID
-        $subscriptionId = (string) Str::uuid();
-        
-        // Create the subscription
-        $subscription = [
-            'id' => $subscriptionId,
-            'model' => $modelClass,
+        // Create the subscription in database
+        $subscription = WebhookSubscription::create([
+            'model_class' => $modelClass,
             'events' => $events,
             'webhook_url' => $webhookUrl,
             'properties' => $properties,
-            'created_at' => now()->toIso8601String(),
-        ];
-        
-        // Get existing subscriptions
-        $subscriptions = $this->getSubscriptions();
-        
-        // Add the new subscription
-        $subscriptions[$subscriptionId] = $subscription;
-        
-        // Save the subscriptions
-        $this->saveSubscriptions($subscriptions);
-        
+            'active' => true,
+        ]);
+
+        // Clear cache to force refresh
+        $this->clearSubscriptionsCache();
+
         Log::channel(config('n8n-eloquent.logging.channel'))
             ->info("Created webhook subscription for model {$modelClass}", [
-                'subscription_id' => $subscriptionId,
+                'subscription_id' => $subscription->id,
                 'events' => $events,
                 'webhook_url' => $webhookUrl,
             ]);
-        
-        return $subscription;
+
+        return $subscription->toLegacyArray();
     }
 
     /**
@@ -70,29 +68,24 @@ class WebhookService
      */
     public function unsubscribe(string $subscriptionId): bool
     {
-        // Get existing subscriptions
-        $subscriptions = $this->getSubscriptions();
-        
-        // Check if the subscription exists
-        if (!isset($subscriptions[$subscriptionId])) {
+        $subscription = WebhookSubscription::find($subscriptionId);
+
+        if (!$subscription) {
             return false;
         }
-        
-        // Get the subscription for logging
-        $subscription = $subscriptions[$subscriptionId];
-        
-        // Remove the subscription
-        unset($subscriptions[$subscriptionId]);
-        
-        // Save the subscriptions
-        $this->saveSubscriptions($subscriptions);
-        
+
+        // Soft delete the subscription
+        $subscription->delete();
+
+        // Clear cache to force refresh
+        $this->clearSubscriptionsCache();
+
         Log::channel(config('n8n-eloquent.logging.channel'))
             ->info("Deleted webhook subscription", [
                 'subscription_id' => $subscriptionId,
-                'model' => $subscription['model'] ?? 'unknown',
+                'model' => $subscription->model_class,
             ]);
-        
+
         return true;
     }
 
@@ -103,7 +96,15 @@ class WebhookService
      */
     public function getSubscriptions(): array
     {
-        return Cache::get($this->cacheKey, []);
+        return Cache::remember($this->cacheKey, $this->cacheTtl, function () {
+            return WebhookSubscription::active()
+                ->get()
+                ->keyBy('id')
+                ->map(function ($subscription) {
+                    return $subscription->toLegacyArray();
+                })
+                ->toArray();
+        });
     }
 
     /**
@@ -115,26 +116,27 @@ class WebhookService
      */
     public function getSubscriptionsForModelEvent(string $modelClass, string $event): array
     {
-        $subscriptions = $this->getSubscriptions();
-        
-        return collect($subscriptions)
-            ->filter(function ($subscription) use ($modelClass, $event) {
-                return $subscription['model'] === $modelClass &&
-                       in_array($event, $subscription['events']);
+        // Use database query for better performance on specific lookups
+        return WebhookSubscription::active()
+            ->forModelEvent($modelClass, $event)
+            ->get()
+            ->map(function ($subscription) {
+                return $subscription->toLegacyArray();
             })
-            ->values()
-            ->all();
+            ->toArray();
     }
 
     /**
-     * Save webhook subscriptions.
+     * Save webhook subscriptions (legacy method for backward compatibility).
      *
      * @param  array  $subscriptions
      * @return void
+     * @deprecated Use database methods instead
      */
     protected function saveSubscriptions(array $subscriptions): void
     {
-        Cache::forever($this->cacheKey, $subscriptions);
+        // This method is kept for backward compatibility but now clears cache
+        $this->clearSubscriptionsCache();
     }
 
     /**
@@ -148,13 +150,15 @@ class WebhookService
      */
     public function triggerWebhook(string $modelClass, string $event, $model, array $additionalPayload = []): void
     {
-        // Get subscriptions for this model and event
-        $subscriptions = $this->getSubscriptionsForModelEvent($modelClass, $event);
-        
-        if (empty($subscriptions)) {
+        // Get subscriptions for this model and event directly from database
+        $subscriptions = WebhookSubscription::active()
+            ->forModelEvent($modelClass, $event)
+            ->get();
+
+        if ($subscriptions->isEmpty()) {
             return;
         }
-        
+
         // Prepare the payload
         $payload = array_merge([
             'event' => $event,
@@ -162,18 +166,13 @@ class WebhookService
             'timestamp' => now()->toIso8601String(),
             'data' => $model->toArray(),
         ], $additionalPayload);
-        
+
         // Send the webhook to each subscription
         foreach ($subscriptions as $subscription) {
-            // Skip inactive subscriptions
-            if (isset($subscription['active']) && !$subscription['active']) {
-                continue;
-            }
-            
             $this->sendWebhookRequest(
-                $subscription['webhook_url'],
+                $subscription->webhook_url,
                 $payload,
-                $subscription['id']
+                $subscription
             );
         }
     }
@@ -183,10 +182,10 @@ class WebhookService
      *
      * @param  string  $url
      * @param  array  $payload
-     * @param  string  $subscriptionId
+     * @param  WebhookSubscription  $subscription
      * @return void
      */
-    protected function sendWebhookRequest(string $url, array $payload, string $subscriptionId): void
+    protected function sendWebhookRequest(string $url, array $payload, WebhookSubscription $subscription): void
     {
         try {
             $client = new \GuzzleHttp\Client();
@@ -202,19 +201,29 @@ class WebhookService
                 'headers' => [
                     'Content-Type' => 'application/json',
                     'X-N8n-Signature' => $signature,
-                    'X-N8n-Subscription-Id' => $subscriptionId,
+                    'X-N8n-Subscription-Id' => $subscription->id,
                 ],
                 'timeout' => 5,
             ]);
-            
+
+            // Record successful trigger
+            $subscription->recordTrigger();
+
             Log::channel(config('n8n-eloquent.logging.channel'))
-                ->info("Sent webhook for subscription {$subscriptionId}", [
+                ->info("Sent webhook for subscription {$subscription->id}", [
                     'status_code' => $response->getStatusCode(),
                     'url' => $url,
                 ]);
         } catch (\Throwable $e) {
+            // Record error
+            $subscription->recordError([
+                'message' => $e->getMessage(),
+                'url' => $url,
+                'code' => $e->getCode(),
+            ]);
+
             Log::channel(config('n8n-eloquent.logging.channel'))
-                ->error("Error sending webhook for subscription {$subscriptionId}", [
+                ->error("Error sending webhook for subscription {$subscription->id}", [
                     'error' => $e->getMessage(),
                     'url' => $url,
                 ]);
@@ -228,7 +237,13 @@ class WebhookService
      */
     public function getAllSubscriptions(): array
     {
-        return array_values($this->getSubscriptions());
+        return WebhookSubscription::active()
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($subscription) {
+                return $subscription->toLegacyArray();
+            })
+            ->toArray();
     }
 
     /**
@@ -239,8 +254,9 @@ class WebhookService
      */
     public function getSubscription(string $subscriptionId): ?array
     {
-        $subscriptions = $this->getSubscriptions();
-        return $subscriptions[$subscriptionId] ?? null;
+        $subscription = WebhookSubscription::find($subscriptionId);
+        
+        return $subscription ? $subscription->toLegacyArray() : null;
     }
 
     /**
@@ -252,68 +268,61 @@ class WebhookService
      */
     public function updateSubscription(string $subscriptionId, array $updates): ?array
     {
-        $subscriptions = $this->getSubscriptions();
+        $subscription = WebhookSubscription::find($subscriptionId);
         
-        if (!isset($subscriptions[$subscriptionId])) {
+        if (!$subscription) {
             return null;
         }
-        
-        // Update the subscription
-        $subscriptions[$subscriptionId] = array_merge(
-            $subscriptions[$subscriptionId],
-            $updates,
-            ['updated_at' => now()->toIso8601String()]
-        );
-        
-        // Save the subscriptions
-        $this->saveSubscriptions($subscriptions);
-        
+
+        // Filter allowed updates
+        $allowedUpdates = array_intersect_key($updates, array_flip([
+            'events', 'webhook_url', 'properties', 'active'
+        ]));
+
+        $subscription->update($allowedUpdates);
+
+        // Clear cache to force refresh
+        $this->clearSubscriptionsCache();
+
         Log::channel(config('n8n-eloquent.logging.channel'))
             ->info("Updated webhook subscription {$subscriptionId}", [
-                'updates' => $updates,
+                'updates' => $allowedUpdates,
             ]);
-        
-        return $subscriptions[$subscriptionId];
+
+        return $subscription->fresh()->toLegacyArray();
     }
 
     /**
-     * Send a webhook to a specific URL.
+     * Send a test webhook.
      *
-     * @param  string  $url
-     * @param  array  $payload
-     * @return array
+     * @param  string  $subscriptionId
+     * @param  array  $testPayload
+     * @return bool
      */
-    public function sendWebhook(string $url, array $payload): array
+    public function sendWebhook(string $subscriptionId, array $testPayload = []): bool
     {
+        $subscription = WebhookSubscription::find($subscriptionId);
+        
+        if (!$subscription) {
+            return false;
+        }
+
+        $payload = array_merge([
+            'event' => 'test',
+            'model' => $subscription->model_class,
+            'timestamp' => now()->toIso8601String(),
+            'data' => ['test' => true],
+        ], $testPayload);
+
         try {
-            $client = new \GuzzleHttp\Client();
-            
-            $apiSecret = config('n8n-eloquent.api.secret');
-            
-            // Calculate HMAC signature
-            $signature = hash_hmac('sha256', json_encode($payload), $apiSecret);
-            
-            // Send the request
-            $response = $client->post($url, [
-                'json' => $payload,
-                'headers' => [
-                    'Content-Type' => 'application/json',
-                    'X-N8n-Signature' => $signature,
-                ],
-                'timeout' => 10,
-            ]);
-            
-            return [
-                'success' => true,
-                'status_code' => $response->getStatusCode(),
-                'response_body' => $response->getBody()->getContents(),
-            ];
+            $this->sendWebhookRequest(
+                $subscription->webhook_url,
+                $payload,
+                $subscription
+            );
+            return true;
         } catch (\Throwable $e) {
-            return [
-                'success' => false,
-                'error' => $e->getMessage(),
-                'status_code' => $e->getCode(),
-            ];
+            return false;
         }
     }
 
@@ -324,40 +333,89 @@ class WebhookService
      */
     public function getWebhookStats(): array
     {
-        $subscriptions = $this->getSubscriptions();
-        
-        $stats = [
-            'total_subscriptions' => count($subscriptions),
-            'active_subscriptions' => 0,
-            'inactive_subscriptions' => 0,
-            'models' => [],
-            'events' => [],
+        $totalSubscriptions = WebhookSubscription::count();
+        $activeSubscriptions = WebhookSubscription::active()->count();
+        $inactiveSubscriptions = WebhookSubscription::inactive()->count();
+        $subscriptionsWithErrors = WebhookSubscription::withErrors()->count();
+        $staleSubscriptions = WebhookSubscription::stale(24)->count();
+
+        return [
+            'total_subscriptions' => $totalSubscriptions,
+            'active_subscriptions' => $activeSubscriptions,
+            'inactive_subscriptions' => $inactiveSubscriptions,
+            'subscriptions_with_errors' => $subscriptionsWithErrors,
+            'stale_subscriptions' => $staleSubscriptions,
+            'total_triggers' => WebhookSubscription::sum('trigger_count'),
         ];
+    }
+
+    /**
+     * Clear the subscriptions cache.
+     *
+     * @return void
+     */
+    public function clearSubscriptionsCache(): void
+    {
+        Cache::forget($this->cacheKey);
+    }
+
+    /**
+     * Migrate existing cache subscriptions to database.
+     *
+     * @return int Number of subscriptions migrated
+     */
+    public function migrateCacheToDatabase(): int
+    {
+        $cacheSubscriptions = Cache::get($this->cacheKey, []);
         
-        foreach ($subscriptions as $subscription) {
-            // Count active/inactive
-            if (isset($subscription['active']) && !$subscription['active']) {
-                $stats['inactive_subscriptions']++;
-            } else {
-                $stats['active_subscriptions']++;
-            }
-            
-            // Count by model
-            $model = $subscription['model'];
-            if (!isset($stats['models'][$model])) {
-                $stats['models'][$model] = 0;
-            }
-            $stats['models'][$model]++;
-            
-            // Count by event
-            foreach ($subscription['events'] as $event) {
-                if (!isset($stats['events'][$event])) {
-                    $stats['events'][$event] = 0;
-                }
-                $stats['events'][$event]++;
-            }
+        if (empty($cacheSubscriptions)) {
+            return 0;
         }
-        
-        return $stats;
+
+        $migrated = 0;
+
+        foreach ($cacheSubscriptions as $subscriptionData) {
+            // Check if subscription already exists in database
+            if (WebhookSubscription::find($subscriptionData['id'])) {
+                continue;
+            }
+
+            // Create subscription in database
+            WebhookSubscription::create([
+                'id' => $subscriptionData['id'],
+                'model_class' => $subscriptionData['model'],
+                'events' => $subscriptionData['events'],
+                'webhook_url' => $subscriptionData['webhook_url'],
+                'properties' => $subscriptionData['properties'] ?? [],
+                'active' => $subscriptionData['active'] ?? true,
+                'created_at' => isset($subscriptionData['created_at']) 
+                    ? \Carbon\Carbon::parse($subscriptionData['created_at'])
+                    : now(),
+            ]);
+
+            $migrated++;
+        }
+
+        // Clear cache after successful migration
+        if ($migrated > 0) {
+            Cache::forget($this->cacheKey);
+        }
+
+        return $migrated;
+    }
+
+    /**
+     * Recover subscriptions from cache if database is empty.
+     *
+     * @return int Number of subscriptions recovered
+     */
+    public function recoverSubscriptions(): int
+    {
+        // Only recover if database is empty
+        if (WebhookSubscription::count() > 0) {
+            return 0;
+        }
+
+        return $this->migrateCacheToDatabase();
     }
 } 

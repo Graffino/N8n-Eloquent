@@ -29,6 +29,95 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Webhook Subscriptions
+    |--------------------------------------------------------------------------
+    |
+    | Configure webhook subscription storage and caching.
+    |
+    */
+    'webhooks' => [
+        // Database configuration
+        'database' => [
+            'table' => 'n8n_webhook_subscriptions',
+            'connection' => env('N8N_ELOQUENT_DB_CONNECTION', null), // Use default if null
+            'soft_deletes' => true,
+            'uuid_primary_key' => true,
+        ],
+        
+        // Cache configuration for performance
+        'cache' => [
+            'enabled' => env('N8N_ELOQUENT_CACHE_ENABLED', true),
+            'store' => env('N8N_ELOQUENT_CACHE_STORE', null), // Use default cache store if null
+            'ttl' => env('N8N_ELOQUENT_CACHE_TTL', 3600), // Cache TTL in seconds (1 hour)
+            'key_prefix' => env('N8N_ELOQUENT_CACHE_PREFIX', 'n8n_eloquent'),
+            'tags' => ['n8n', 'webhooks'], // Cache tags for easier invalidation
+        ],
+        
+        // Subscription health monitoring
+        'health' => [
+            'stale_threshold_hours' => env('N8N_ELOQUENT_STALE_HOURS', 24), // Consider subscriptions stale after this many hours
+            'error_threshold_count' => env('N8N_ELOQUENT_ERROR_THRESHOLD', 5), // Max consecutive errors before marking as problematic
+            'health_check_interval' => env('N8N_ELOQUENT_HEALTH_INTERVAL', 3600), // Health check interval in seconds
+            'auto_deactivate_errors' => env('N8N_ELOQUENT_AUTO_DEACTIVATE', false), // Auto-deactivate subscriptions with persistent errors
+        ],
+        
+        // Cleanup policies for subscription management
+        'cleanup' => [
+            'enabled' => env('N8N_ELOQUENT_CLEANUP_ENABLED', true),
+            'inactive_days' => env('N8N_ELOQUENT_CLEANUP_INACTIVE_DAYS', 30), // Clean up inactive subscriptions after this many days
+            'error_days' => env('N8N_ELOQUENT_CLEANUP_ERROR_DAYS', 7), // Clean up subscriptions with errors after this many days
+            'never_triggered_days' => env('N8N_ELOQUENT_CLEANUP_NEVER_TRIGGERED_DAYS', 14), // Clean up subscriptions never triggered after this many days
+            'batch_size' => env('N8N_ELOQUENT_CLEANUP_BATCH_SIZE', 100), // Number of records to process in each cleanup batch
+            'schedule' => env('N8N_ELOQUENT_CLEANUP_SCHEDULE', 'daily'), // Cleanup schedule (daily, weekly, monthly)
+        ],
+        
+        // Archiving configuration
+        'archiving' => [
+            'enabled' => env('N8N_ELOQUENT_ARCHIVING_ENABLED', false),
+            'archive_after_days' => env('N8N_ELOQUENT_ARCHIVE_DAYS', 90), // Archive subscriptions after this many days
+            'archive_table' => 'n8n_webhook_subscriptions_archive',
+            'compress_archives' => env('N8N_ELOQUENT_COMPRESS_ARCHIVES', true),
+            'retention_days' => env('N8N_ELOQUENT_ARCHIVE_RETENTION_DAYS', 365), // Keep archives for this many days
+        ],
+        
+        // Backup configuration
+        'backup' => [
+            'enabled' => env('N8N_ELOQUENT_BACKUP_ENABLED', true),
+            'auto_backup' => env('N8N_ELOQUENT_AUTO_BACKUP', false), // Automatically create backups
+            'backup_schedule' => env('N8N_ELOQUENT_BACKUP_SCHEDULE', 'weekly'), // Backup schedule
+            'retention_days' => env('N8N_ELOQUENT_BACKUP_RETENTION_DAYS', 30), // Keep backups for this many days
+            'storage_disk' => env('N8N_ELOQUENT_BACKUP_DISK', 'local'), // Storage disk for backups
+            'compression' => env('N8N_ELOQUENT_BACKUP_COMPRESSION', true), // Compress backup files
+        ],
+        
+        // Performance tuning
+        'performance' => [
+            'query_cache_ttl' => env('N8N_ELOQUENT_QUERY_CACHE_TTL', 300), // Query result cache TTL in seconds
+            'bulk_operations_batch_size' => env('N8N_ELOQUENT_BULK_BATCH_SIZE', 500), // Batch size for bulk operations
+            'webhook_timeout' => env('N8N_ELOQUENT_WEBHOOK_TIMEOUT', 5), // Webhook request timeout in seconds
+            'max_retries' => env('N8N_ELOQUENT_MAX_RETRIES', 3), // Max retry attempts for failed webhooks
+            'retry_delay' => env('N8N_ELOQUENT_RETRY_DELAY', 60), // Delay between retries in seconds
+        ],
+        
+        // Migration settings
+        'migration' => [
+            'auto_migrate' => env('N8N_ELOQUENT_AUTO_MIGRATE', false),
+            'backup_before_migration' => env('N8N_ELOQUENT_BACKUP_BEFORE_MIGRATION', true),
+            'validate_data' => env('N8N_ELOQUENT_VALIDATE_MIGRATION_DATA', true),
+            'rollback_on_error' => env('N8N_ELOQUENT_ROLLBACK_ON_ERROR', true),
+        ],
+        
+        // Security settings
+        'security' => [
+            'encrypt_webhook_urls' => env('N8N_ELOQUENT_ENCRYPT_URLS', false), // Encrypt webhook URLs in database
+            'validate_webhook_ssl' => env('N8N_ELOQUENT_VALIDATE_SSL', true), // Validate SSL certificates for webhook URLs
+            'allowed_domains' => env('N8N_ELOQUENT_ALLOWED_DOMAINS', null), // Comma-separated list of allowed webhook domains
+            'rate_limit_per_subscription' => env('N8N_ELOQUENT_RATE_LIMIT_SUBSCRIPTION', 100), // Max triggers per subscription per hour
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Model Discovery
     |--------------------------------------------------------------------------
     |
