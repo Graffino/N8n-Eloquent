@@ -317,7 +317,10 @@ export class LaravelEloquentTrigger implements INodeType {
 
 		// Get node parameters from workflow static data
 		const webhookData = this.getWorkflowStaticData('node');
+		console.log('📨 Webhook static data:', webhookData);
+		
 		const nodeParameters = (webhookData.nodeParameters || {}) as INodeParameters;
+		console.log('📨 Node parameters:', nodeParameters);
 
 		// Helper functions for security validation
 		const getClientIP = (req: any, headers: IDataObject): string => {
@@ -379,9 +382,13 @@ export class LaravelEloquentTrigger implements INodeType {
 		// Security validations
 		try {
 			// 1. IP Address validation
-			const expectedIp = nodeParameters.expectedSourceIp as string;
-			if (expectedIp) {
+			const expectedIp = nodeParameters.expectedSourceIp || '';
+			console.log('📨 Expected IP:', expectedIp);
+			
+			if (expectedIp && expectedIp.trim() !== '') {
 				const clientIp = getClientIP(req, headers);
+				console.log('📨 Client IP:', clientIp);
+				
 				if (!isIpAllowed(clientIp, expectedIp)) {
 					throw new NodeOperationError(this.getNode(), 
 						`Webhook rejected: IP ${clientIp} not in allowed range ${expectedIp}`
@@ -390,7 +397,9 @@ export class LaravelEloquentTrigger implements INodeType {
 			}
 
 			// 2. HMAC Signature verification
-			const verifyHmac = nodeParameters.verifyHmac as boolean;
+			const verifyHmac = nodeParameters.verifyHmac || false;
+			console.log('📨 Verify HMAC:', verifyHmac);
+			
 			if (verifyHmac && credentials.hmacSecret) {
 				const signature = headers['x-laravel-signature'] as string;
 				if (!signature) {
@@ -413,7 +422,9 @@ export class LaravelEloquentTrigger implements INodeType {
 			}
 
 			// 3. Timestamp validation (replay attack prevention)
-			const requireTimestamp = nodeParameters.requireTimestamp as boolean;
+			const requireTimestamp = nodeParameters.requireTimestamp || false;
+			console.log('📨 Require timestamp:', requireTimestamp);
+			
 			if (requireTimestamp && bodyData.timestamp) {
 				const webhookTime = new Date(bodyData.timestamp as string).getTime();
 				const currentTime = Date.now();
@@ -427,20 +438,24 @@ export class LaravelEloquentTrigger implements INodeType {
 			}
 
 			// 4. Model and event validation
-			const configuredModel = nodeParameters.model as string;
-			const configuredEvents = nodeParameters.events as string[];
+			const configuredModel = nodeParameters.model || '';
+			const configuredEvents = nodeParameters.events || [];
+			console.log('📨 Configured model:', configuredModel);
+			console.log('📨 Configured events:', configuredEvents);
 			
-			if (bodyData.model && bodyData.model !== configuredModel) {
+			if (bodyData.model && configuredModel && bodyData.model !== configuredModel) {
 				throw new NodeOperationError(this.getNode(), 
 					`Webhook rejected: Model mismatch. Expected ${configuredModel}, got ${bodyData.model}`
 				);
 			}
 
-			if (bodyData.event && !configuredEvents.includes(bodyData.event as string)) {
+			if (bodyData.event && configuredEvents.length > 0 && !configuredEvents.includes(bodyData.event as string)) {
 				throw new NodeOperationError(this.getNode(), 
 					`Webhook rejected: Event ${bodyData.event} not in configured events`
 				);
 			}
+
+			console.log('✅ All security validations passed');
 
 		} catch (error) {
 			// Log security violations for monitoring
@@ -453,6 +468,8 @@ export class LaravelEloquentTrigger implements INodeType {
 			
 			throw error;
 		}
+
+		console.log('🎉 Webhook processing successful, returning data');
 
 		// Return successful webhook data
 		return {
