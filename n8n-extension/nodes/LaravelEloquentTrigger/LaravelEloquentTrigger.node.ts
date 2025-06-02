@@ -8,6 +8,8 @@ import {
 	NodeOperationError,
 	IHookFunctions,
 	IHttpRequestMethods,
+	ILoadOptionsFunctions,
+	INodePropertyOptions,
 } from 'n8n-workflow';
 
 import { createHmac, timingSafeEqual } from 'crypto';
@@ -44,10 +46,12 @@ export class LaravelEloquentTrigger implements INodeType {
 			{
 				displayName: 'Model',
 				name: 'model',
-				type: 'string',
+				type: 'options',
+				typeOptions: {
+					loadOptionsMethod: 'getModels',
+				},
 				default: '',
 				required: true,
-				placeholder: 'App\\Models\\User',
 				description: 'The Laravel Eloquent model class to monitor',
 			},
 			{
@@ -120,6 +124,34 @@ export class LaravelEloquentTrigger implements INodeType {
 		],
 	};
 
+	methods = {
+		loadOptions: {
+			async getModels(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				const credentials = await this.getCredentials('laravelEloquentApi');
+				const baseUrl = credentials.baseUrl as string;
+				const apiKey = credentials.apiKey as string;
+
+				try {
+					const response = await this.helpers.request({
+						method: 'GET',
+						url: `${baseUrl}/api/n8n/models`,
+						headers: {
+							'X-N8n-Api-Key': apiKey,
+							'Content-Type': 'application/json',
+						},
+					});
+
+					return response.models.map((model: any) => ({
+						name: model.name,
+						value: model.class,
+					}));
+				} catch (error) {
+					throw new NodeOperationError(this.getNode(), `Failed to load models: ${(error as Error).message}`);
+				}
+			},
+		},
+	};
+
 	// Webhook lifecycle methods for automatic registration/unregistration
 	async webhookCheckForExistingData(this: IHookFunctions): Promise<boolean> {
 		// This method is called when the workflow is activated
@@ -132,6 +164,11 @@ export class LaravelEloquentTrigger implements INodeType {
 		// It should register the webhook with the Laravel application
 		
 		console.log('🔄 Laravel Eloquent webhook registration starting...');
+		console.log('🔍 Node context:', {
+			nodeId: this.getNode().id,
+			nodeName: this.getNode().name,
+			workflowId: this.getWorkflow().id,
+		});
 		
 		try {
 			const credentials = await this.getCredentials('laravelEloquentApi');
@@ -145,7 +182,19 @@ export class LaravelEloquentTrigger implements INodeType {
 				events: events,
 				webhookUrl: webhookUrl,
 				hasApiKey: !!credentials.apiKey,
+				apiKeyLength: credentials.apiKey ? (credentials.apiKey as string).length : 0,
 			});
+
+			// Validate required parameters
+			if (!model) {
+				throw new Error('Model parameter is required');
+			}
+			if (!events || events.length === 0) {
+				throw new Error('At least one event must be selected');
+			}
+			if (!webhookUrl) {
+				throw new Error('Webhook URL could not be generated');
+			}
 
 			const requestBody = {
 				model: model,
@@ -167,6 +216,11 @@ export class LaravelEloquentTrigger implements INodeType {
 
 			console.log('🌐 Making request to:', options.uri);
 			console.log('📦 Request body:', requestBody);
+			console.log('🔑 Request headers:', {
+				'Content-Type': options.headers['Content-Type'],
+				'Accept': options.headers['Accept'],
+				'X-N8n-Api-Key': options.headers['X-N8n-Api-Key'] ? '***' + (options.headers['X-N8n-Api-Key'] as string).slice(-4) : 'missing',
+			});
 
 			const response = await this.helpers.request(options);
 			
