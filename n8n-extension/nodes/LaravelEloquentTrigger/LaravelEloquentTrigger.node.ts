@@ -13,6 +13,14 @@ import {
 
 import { createHmac, timingSafeEqual } from 'crypto';
 
+interface INodeParameters {
+	model: string;
+	events: string[];
+	verifyHmac: boolean;
+	requireTimestamp: boolean;
+	expectedSourceIp: string;
+}
+
 export class LaravelEloquentTrigger implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'Laravel Eloquent Trigger',
@@ -183,44 +191,48 @@ export class LaravelEloquentTrigger implements INodeType {
 				try {
 					const model = this.getNodeParameter('model') as string;
 					const events = this.getNodeParameter('events') as string[];
-					const webhookUrl = this.getNodeWebhookUrl('default');
-
-					console.log('📋 Registration details:', {
-						model: model,
-						events: events,
-						webhookUrl: webhookUrl,
-					});
-
-					// Validate required parameters
-					if (!model) {
-						console.error('❌ Model parameter is required');
-						throw new Error('Model parameter is required');
-					}
-					if (!events || events.length === 0) {
-						console.error('❌ At least one event must be selected');
-						throw new Error('At least one event must be selected');
-					}
-					if (!webhookUrl) {
-						console.error('❌ Webhook URL could not be generated');
-						throw new Error('Webhook URL could not be generated');
-					}
-
-					const requestBody = {
-						model: model,
-						events: events,
-						webhook_url: webhookUrl,
-						node_id: this.getNode().id,
-						workflow_id: this.getWorkflow().id,
+					const verifyHmac = this.getNodeParameter('verifyHmac', false) as boolean;
+					const requireTimestamp = this.getNodeParameter('requireTimestamp', false) as boolean;
+					const expectedSourceIp = this.getNodeParameter('expectedSourceIp', '') as string;
+					
+					// Store node parameters in workflow static data for webhook execution
+					const webhookData = this.getWorkflowStaticData('node');
+					webhookData.nodeParameters = {
+						model,
+						events,
+						verifyHmac,
+						requireTimestamp,
+						expectedSourceIp,
 					};
-
-					console.log('🌐 Making authenticated request to webhook subscription endpoint');
-					console.log('📦 Request body:', requestBody);
-
+					
+					const webhookUrl = this.getNodeWebhookUrl('default');
 					const credentials = await this.getCredentials('laravelEloquentApi');
 					const baseUrl = credentials.baseUrl as string;
 					
-					console.log('🔑 Using credentials with baseUrl:', baseUrl);
-
+					console.log('📋 Webhook registration details:', {
+						model,
+						events,
+						webhookUrl,
+						verifyHmac,
+						requireTimestamp,
+						expectedSourceIp: expectedSourceIp || 'none',
+					});
+					
+					console.log('🌐 Making authenticated request to webhook subscription endpoint');
+					
+					const requestBody = {
+						model,
+						events,
+						webhook_url: webhookUrl,
+						node_id: this.getNode().id,
+						workflow_id: this.getWorkflow().id,
+						verify_hmac: verifyHmac,
+						require_timestamp: requireTimestamp,
+						expected_source_ip: expectedSourceIp || null,
+					};
+					
+					console.log('📦 Request body:', requestBody);
+					
 					const response = await this.helpers.httpRequestWithAuthentication.call(this, 'laravelEloquentApi', {
 						method: 'POST',
 						url: `${baseUrl}/api/n8n/webhooks/subscribe`,
@@ -228,43 +240,19 @@ export class LaravelEloquentTrigger implements INodeType {
 						json: true,
 					});
 					
-					console.log('✅ Registration response:', response);
+					console.log('📨 Laravel response:', response);
 					
 					// Store the subscription ID for later cleanup
-					if (response.subscription && response.subscription.id) {
-						const webhookData = this.getWorkflowStaticData('node');
-						webhookData.subscriptionId = response.subscription.id;
-						console.log('💾 Stored subscription ID:', response.subscription.id);
-					} else {
-						console.warn('⚠️ No subscription ID in response:', response);
+					if (response && response.subscription_id) {
+						webhookData.subscriptionId = response.subscription_id;
+						console.log('💾 Stored subscription ID:', response.subscription_id);
 					}
 					
-					console.log('🎉 Laravel Eloquent webhook registered successfully!');
+					console.log('✅ Laravel Eloquent webhook registered successfully');
 					return true;
 				} catch (error) {
 					console.error('❌ Failed to register Laravel Eloquent webhook:', error);
-					
-					// Enhanced error logging
-					if (error instanceof Error) {
-						console.error('Error details:', {
-							message: error.message,
-							stack: error.stack,
-						});
-					}
-					
-					// Check if it's a network/HTTP error
-					if (error && typeof error === 'object' && 'response' in error) {
-						const httpError = error as any;
-						console.error('HTTP Error details:', {
-							status: httpError.response?.status,
-							statusText: httpError.response?.statusText,
-							data: httpError.response?.data,
-							headers: httpError.response?.headers,
-						});
-					}
-					
-					const errorMessage = error instanceof Error ? error.message : String(error);
-					throw new NodeOperationError(this.getNode(), `Failed to register webhook: ${errorMessage}`);
+					throw new NodeOperationError(this.getNode(), `Failed to register webhook: ${error instanceof Error ? error.message : String(error)}`);
 				}
 			},
 
@@ -327,6 +315,10 @@ export class LaravelEloquentTrigger implements INodeType {
 		console.log('📨 Webhook body data:', bodyData);
 		console.log('📨 Webhook headers:', headers);
 
+		// Get node parameters from workflow static data
+		const webhookData = this.getWorkflowStaticData('node');
+		const nodeParameters = (webhookData.nodeParameters || {}) as INodeParameters;
+
 		// Helper functions for security validation
 		const getClientIP = (req: any, headers: IDataObject): string => {
 			return (
@@ -387,7 +379,7 @@ export class LaravelEloquentTrigger implements INodeType {
 		// Security validations
 		try {
 			// 1. IP Address validation
-			const expectedIp = this.getNodeParameter('expectedSourceIp') as string;
+			const expectedIp = nodeParameters.expectedSourceIp as string;
 			if (expectedIp) {
 				const clientIp = getClientIP(req, headers);
 				if (!isIpAllowed(clientIp, expectedIp)) {
@@ -398,7 +390,7 @@ export class LaravelEloquentTrigger implements INodeType {
 			}
 
 			// 2. HMAC Signature verification
-			const verifyHmac = this.getNodeParameter('verifyHmac') as boolean;
+			const verifyHmac = nodeParameters.verifyHmac as boolean;
 			if (verifyHmac && credentials.hmacSecret) {
 				const signature = headers['x-laravel-signature'] as string;
 				if (!signature) {
@@ -421,7 +413,7 @@ export class LaravelEloquentTrigger implements INodeType {
 			}
 
 			// 3. Timestamp validation (replay attack prevention)
-			const requireTimestamp = this.getNodeParameter('requireTimestamp') as boolean;
+			const requireTimestamp = nodeParameters.requireTimestamp as boolean;
 			if (requireTimestamp && bodyData.timestamp) {
 				const webhookTime = new Date(bodyData.timestamp as string).getTime();
 				const currentTime = Date.now();
@@ -435,8 +427,8 @@ export class LaravelEloquentTrigger implements INodeType {
 			}
 
 			// 4. Model and event validation
-			const configuredModel = this.getNodeParameter('model') as string;
-			const configuredEvents = this.getNodeParameter('events') as string[];
+			const configuredModel = nodeParameters.model as string;
+			const configuredEvents = nodeParameters.events as string[];
 			
 			if (bodyData.model && bodyData.model !== configuredModel) {
 				throw new NodeOperationError(this.getNode(), 
