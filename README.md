@@ -193,20 +193,26 @@ Configure events and properties for specific models:
 
 ### Laravel Side
 
-To enable n8n integration for a model, use the `HasN8nEvents` trait:
+To enable n8n integration for a model, add it to your configuration in `config/n8n-eloquent.php`:
 
 ```php
-use N8n\Eloquent\Traits\HasN8nEvents;
-
-class User extends Model
-{
-    use HasN8nEvents;
-    
-    // ...
-}
+'models' => [
+    'mode' => 'whitelist', // or 'blacklist' or 'all'
+    'whitelist' => [
+        'App\\Models\\User',
+    ],
+    'config' => [
+        'App\\Models\\User' => [
+            'events' => ['created', 'updated', 'deleted'],
+            'watched_attributes' => ['name', 'email'], // Only trigger update events for these
+            'getters' => ['name', 'email'], // Optional: trigger events when these properties are accessed
+            'setters' => ['name', 'email'], // Optional: trigger events when these properties are changed
+        ],
+    ],
+],
 ```
 
-This will automatically register the model with the n8n integration.
+The package will automatically register the model events with n8n based on your configuration. No trait or model modifications are required!
 
 ### n8n Side
 

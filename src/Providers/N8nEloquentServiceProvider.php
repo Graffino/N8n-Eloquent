@@ -92,6 +92,52 @@ class N8nEloquentServiceProvider extends ServiceProvider
      */
     protected function registerEventListeners()
     {
+        // Get the model discovery service
+        $discoveryService = $this->app->make(ModelDiscoveryService::class);
+        
+        // Get all models based on config settings (whitelist/blacklist/all)
+        $models = $discoveryService->getModels();
+        
+        // Get default events from config
+        $defaultEvents = config('n8n-eloquent.events.default', ['created', 'updated', 'deleted']);
+        
+        foreach ($models as $modelClass) {
+            // Get model-specific config
+            $modelConfig = config("n8n-eloquent.models.config.{$modelClass}", []);
+            
+            // Get events for this specific model, fallback to default events
+            $events = $modelConfig['events'] ?? $defaultEvents;
+            
+            // Register the events for this model
+            foreach ($events as $event) {
+                $modelClass::$event(function ($model) use ($event) {
+                    event(new ModelLifecycleEvent($model, $event));
+                });
+            }
+            
+            // If property events are enabled, register those too
+            if (config('n8n-eloquent.events.property_events.enabled', true)) {
+                $getters = $modelConfig['getters'] ?? [];
+                $setters = $modelConfig['setters'] ?? [];
+                
+                // Register property events
+                foreach ($getters as $property) {
+                    $modelClass::retrieved(function ($model) use ($property) {
+                        event(new ModelPropertyEvent($model, 'get', $property));
+                    });
+                }
+                
+                foreach ($setters as $property) {
+                    $modelClass::saving(function ($model) use ($property) {
+                        if ($model->isDirty($property)) {
+                            event(new ModelPropertyEvent($model, 'set', $property));
+                        }
+                    });
+                }
+            }
+        }
+
+        // Register the event listeners
         Event::listen(ModelLifecycleEvent::class, ModelLifecycleListener::class);
         Event::listen(ModelPropertyEvent::class, ModelPropertyListener::class);
     }

@@ -127,11 +127,22 @@ n8n start
 1. Check Laravel Telescope for failed HTTP requests
 2. Verify n8n webhook URL is accessible
 3. Check HMAC signature validation
-4. Verify model has `HasN8nEvents` trait
+4. Verify model is properly configured in n8n-eloquent.php config
 
 ### If no events are triggered:
-1. Ensure User model has `HasN8nEvents` trait
-2. Check if ModelObserver is registered
+1. Check your n8n-eloquent.php configuration:
+   ```php
+   'models' => [
+       'mode' => 'whitelist',
+       'whitelist' => ['App\\Models\\User'],
+       'config' => [
+           'App\\Models\\User' => [
+               'events' => ['created', 'updated', 'deleted']
+           ]
+       ]
+   ]
+   ```
+2. Check if events are properly registered in the service provider
 3. Verify webhook subscription exists in database:
    ```sql
    SELECT * FROM webhook_subscriptions;
@@ -164,4 +175,4 @@ You can import the test workflow from `test-laravel-eloquent-workflow.json`:
 2. **"Webhook registration not called"** → Workflow not activated
 3. **"Connection refused"** → Laravel server not running
 4. **"Unauthorized"** → Wrong API key or credentials
-5. **"No webhook events"** → Model missing `HasN8nEvents` trait 
+5. **"No webhook events"** → Model not configured in n8n-eloquent.php config 

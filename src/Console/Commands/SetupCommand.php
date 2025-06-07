@@ -128,7 +128,7 @@ class SetupCommand extends Command
         $this->newLine();
         $this->info('📖 Next Steps:');
         $this->line('1. Configure your models in config/n8n-eloquent.php');
-        $this->line('2. Add the HasN8nEvents trait to your models');
+        $this->line('2. Set up model events in the configuration file');
         $this->line('3. Register models: php artisan n8n:register-models --all');
         $this->line('4. Test the API: GET /api/n8n/models (with X-N8n-Api-Key header)');
         
