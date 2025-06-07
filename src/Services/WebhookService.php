@@ -165,7 +165,35 @@ class WebhookService
             'model' => $modelClass,
             'timestamp' => now()->toIso8601String(),
             'data' => $model->toArray(),
+            'metadata' => [
+                'trigger_chain' => $additionalPayload['metadata']['trigger_chain'] ?? [],
+                'source_event' => $event,
+                'source_model' => $modelClass,
+                'source_id' => $model->getKey(),
+                'trigger_depth' => isset($additionalPayload['metadata']['trigger_depth']) 
+                    ? $additionalPayload['metadata']['trigger_depth'] + 1 
+                    : 1
+            ]
         ], $additionalPayload);
+
+        // Check for infinite loop
+        $maxTriggerDepth = config('n8n-eloquent.events.max_trigger_depth', 5);
+        if ($payload['metadata']['trigger_depth'] > $maxTriggerDepth) {
+            Log::channel(config('n8n-eloquent.logging.channel'))
+                ->warning("Maximum trigger depth reached for {$modelClass} {$event} event", [
+                    'trigger_chain' => $payload['metadata']['trigger_chain'],
+                    'max_depth' => $maxTriggerDepth
+                ]);
+            return;
+        }
+
+        // Add current event to trigger chain
+        $payload['metadata']['trigger_chain'][] = [
+            'event' => $event,
+            'model' => $modelClass,
+            'id' => $model->getKey(),
+            'depth' => $payload['metadata']['trigger_depth']
+        ];
 
         // Send the webhook to each subscription
         foreach ($subscriptions as $subscription) {

@@ -216,11 +216,38 @@ The package will automatically register the model events with n8n based on your 
 
 ### n8n Side
 
-In n8n, you can:
+In n8n, you have access to two powerful nodes:
 
-1. Trigger workflows on model events
-2. Get model data
-3. Update model data
+1. **Laravel Eloquent Trigger**: Triggers workflows on model events (created, updated, deleted)
+2. **Laravel Eloquent CRUD**: Perform all CRUD operations on your models:
+   - Create new records
+   - Read records (get all or by ID)
+   - Update existing records
+   - Delete records
+   - Advanced filtering and pagination support
+
+#### Example: Using the CRUD Node
+
+1. **Create a Record**:
+   - Select the "Create" operation
+   - Choose your model (e.g., User)
+   - Add field values (name, email, etc.)
+
+2. **Get Records**:
+   - Select "Get All Records" operation
+   - Configure pagination (limit/offset)
+   - Add optional filters and sorting
+
+3. **Update a Record**:
+   - Select the "Update" operation
+   - Specify the record ID
+   - Set the fields to update
+
+4. **Delete a Record**:
+   - Select the "Delete" operation
+   - Specify the record ID
+
+Each operation supports error handling and can be combined with other n8n nodes for complex workflows.
 
 ## Example: User Creation Workflow
 
@@ -310,6 +337,58 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [ ] **Phase 3**: Advanced Workflow Templates
 - [ ] **Phase 4**: Performance Optimizations
 - [ ] **Phase 5**: Enterprise Features
+
+## 🔄 Event Loop Prevention
+
+The package includes built-in protection against infinite event loops. When a model event triggers a webhook, the package tracks:
+
+- The trigger chain (sequence of events that led to the current event)
+- The trigger depth (how many events deep we are)
+- Source event information
+
+This prevents scenarios where Event A triggers Event B, which triggers Event A again, creating an infinite loop.
+
+### Configuration
+
+```env
+# Maximum depth of trigger chain (default: 5)
+N8N_ELOQUENT_MAX_TRIGGER_DEPTH=5
+```
+
+### Webhook Payload
+
+The webhook payload includes metadata to help track the trigger chain:
+
+```json
+{
+  "event": "created",
+  "model": "App\\Models\\User",
+  "data": {
+    "id": 1,
+    "name": "John Doe"
+  },
+  "metadata": {
+    "trigger_chain": [
+      {
+        "event": "created",
+        "model": "App\\Models\\Order",
+        "id": 123,
+        "depth": 1
+      },
+      {
+        "event": "created",
+        "model": "App\\Models\\User",
+        "id": 1,
+        "depth": 2
+      }
+    ],
+    "source_event": "created",
+    "source_model": "App\\Models\\Order",
+    "source_id": 123,
+    "trigger_depth": 2
+  }
+}
+```
 
 ---
 

@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-laravel-eloquent",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "n8n nodes for Laravel Eloquent integration - trigger workflows on model events and perform CRUD operations",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -21,8 +21,7 @@
     ],
     "nodes": [
       "dist/nodes/LaravelEloquentTrigger/LaravelEloquentTrigger.node.js",
-      "dist/nodes/LaravelEloquentGet/LaravelEloquentGet.node.js",
-      "dist/nodes/LaravelEloquentSet/LaravelEloquentSet.node.js"
+      "dist/nodes/LaravelEloquentCrud/LaravelEloquentCrud.node.js"
     ]
   },
   "keywords": [

@@ -11,7 +11,7 @@ return [
     */
     'api' => [
         // The secret key used for authentication with n8n
-        'secret' => env('N8N_ELOQUENT_API_SECRET', null),
+        'secret' => env('N8N_ELOQUENT_API_SECRET'),
         
         // The prefix for the API routes
         'prefix' => env('N8N_ELOQUENT_API_PREFIX', 'api/n8n'),
@@ -126,7 +126,7 @@ return [
     */
     'models' => [
         // The base namespace for models
-        'namespace' => 'App\\Models',
+        'namespace' => env('N8N_ELOQUENT_MODELS_NAMESPACE', 'App\\Models'),
         
         // The directory where models are located
         'directory' => app_path('Models'),
@@ -166,27 +166,26 @@ return [
     */
     'events' => [
         // Enable/disable event processing globally
-        'enabled' => true,
+        'enabled' => env('N8N_ELOQUENT_EVENTS_ENABLED', true),
         
         // Default events to listen for
         'default' => ['created', 'updated', 'deleted'],
         
         // Whether to enable property getter/setter events
         'property_events' => [
-            'enabled' => true,
+            'enabled' => env('N8N_ELOQUENT_PROPERTY_EVENTS_ENABLED', true),
             'default' => [], // Default properties to trigger events for
-            'skip_unchanged' => true, // Skip setter events if value didn't change
+            'skip_unchanged' => env('N8N_ELOQUENT_SKIP_UNCHANGED_PROPERTIES', true), // Skip setter events if value didn't change
             'rate_limit' => [
-                'enabled' => true,
-                'max_attempts' => 10,
-                'decay_minutes' => 1,
+                'enabled' => env('N8N_ELOQUENT_RATE_LIMIT_ENABLED', true),
+                'decay_minutes' => env('N8N_ELOQUENT_RATE_LIMIT_DECAY_MINUTES', 1),
             ],
         ],
         
         // Transaction handling
         'transactions' => [
-            'enabled' => true,
-            'rollback_on_error' => true,
+            'enabled' => env('N8N_ELOQUENT_TRANSACTIONS_ENABLED', true),
+            'rollback_on_error' => env('N8N_ELOQUENT_ROLLBACK_ON_ERROR', true),
         ],
         
         // Queue configuration for events
@@ -197,6 +196,9 @@ return [
         
         // Error handling
         'throw_on_error' => false,
+        
+        // Max trigger depth
+        'max_trigger_depth' => env('N8N_ELOQUENT_MAX_TRIGGER_DEPTH', 1),
     ],
 
     /*
@@ -226,7 +228,7 @@ return [
     |
     */
     'logging' => [
-        'enabled' => true,
+        'enabled' => env('N8N_ELOQUENT_LOGGING_ENABLED', true),
         'channel' => env('N8N_ELOQUENT_LOG_CHANNEL', env('LOG_CHANNEL', 'stack')),
         'level' => env('N8N_ELOQUENT_LOG_LEVEL', 'debug'),
     ],

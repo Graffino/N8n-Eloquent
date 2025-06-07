@@ -1,11 +1,9 @@
 import { LaravelEloquentApi } from './credentials/LaravelEloquentApi.credentials';
 import { LaravelEloquentTrigger } from './nodes/LaravelEloquentTrigger/LaravelEloquentTrigger.node';
-import { LaravelEloquentGet } from './nodes/LaravelEloquentGet/LaravelEloquentGet.node';
-import { LaravelEloquentSet } from './nodes/LaravelEloquentSet/LaravelEloquentSet.node';
+import { LaravelEloquentCrud } from './nodes/LaravelEloquentCrud/LaravelEloquentCrud.node';
 
 export {
 	LaravelEloquentApi,
 	LaravelEloquentTrigger,
-	LaravelEloquentGet,
-	LaravelEloquentSet,
+	LaravelEloquentCrud,
 }; 

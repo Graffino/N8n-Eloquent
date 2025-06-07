@@ -5,6 +5,40 @@ All notable changes to the n8n Laravel Eloquent Integration extension will be do
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2024-03-21
+
+### 🔄 Changed
+
+#### Node Consolidation
+- **Consolidated CRUD Operations**: Combined the separate Get and Set nodes into a single, more powerful Laravel Eloquent CRUD node
+- **Improved User Experience**: Simplified workflow building with a unified node for all model operations
+- **Enhanced Filtering**: Added advanced filtering and sorting capabilities to the CRUD node
+- **Better Pagination**: Improved pagination support with limit and offset parameters
+
+### 🗑️ Removed
+- **Laravel Eloquent Get Node**: Functionality moved to CRUD node
+- **Laravel Eloquent Set Node**: Functionality moved to CRUD node
+
+### ✨ Added
+
+#### Laravel Eloquent CRUD Node Features
+- **Create Operation**: Create new model records with field validation
+- **Get All Records**: Retrieve records with pagination and advanced filtering
+- **Get Record by ID**: Fetch specific records by primary key
+- **Update Operation**: Update existing records with field validation
+- **Delete Operation**: Remove records by ID
+- **Advanced Filtering**: Multiple operators and conditions:
+  - Equals (`=`)
+  - Not Equals (`!=`)
+  - Greater Than (`>`)
+  - Greater Than or Equal (`>=`)
+  - Less Than (`<`)
+  - Less Than or Equal (`<=`)
+  - Like (`LIKE`)
+  - In (`IN`)
+- **Order By Support**: Sort results by multiple fields and directions
+- **Enhanced Error Handling**: Comprehensive error handling and validation
+
 ## [1.0.0] - 2024-01-15
 
 ### 🎉 Initial Release

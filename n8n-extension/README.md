@@ -9,8 +9,7 @@ A comprehensive n8n community node package that provides seamless integration wi
 ## 🚀 Features
 
 - **🔔 Real-time Triggers**: Listen to Laravel Eloquent model events (created, updated, deleted, etc.)
-- **📖 Data Reading**: Fetch records from Laravel models with filtering and relationships
-- **✏️ Data Writing**: Create, update, upsert, and delete Laravel model records
+- **💾 CRUD Operations**: Create, Read, Update, and Delete Laravel model records
 - **🔐 Secure Authentication**: API key and HMAC signature verification
 - **🔗 Relationship Support**: Include related models in your queries
 - **🎯 Advanced Filtering**: Search records with multiple filter conditions
@@ -98,54 +97,60 @@ Triggers workflows when Laravel model events occur.
 }
 ```
 
-### 📖 Laravel Eloquent Get
+### 💾 Laravel Eloquent CRUD
 
-Retrieves data from Laravel models.
-
-**Operations:**
-- **Get All**: Retrieve all records with optional limit
-- **Get by ID**: Fetch a specific record by ID
-- **Search**: Find records with custom filters
-
-**Configuration:**
-- **Model**: Laravel model class
-- **Limit**: Maximum number of records (for Get All/Search)
-- **Record ID**: Specific record ID (for Get by ID)
-- **Filters**: Advanced filtering options (for Search)
-- **Include Relationships**: Comma-separated list of relationships
-
-**Example Filters:**
-```json
-[
-  {
-    "field": "status",
-    "operator": "=",
-    "value": "active"
-  },
-  {
-    "field": "created_at",
-    "operator": ">=",
-    "value": "2024-01-01"
-  }
-]
-```
-
-### ✏️ Laravel Eloquent Set
-
-Creates, updates, or deletes Laravel model records.
+Performs Create, Read, Update, and Delete operations on Laravel models.
 
 **Operations:**
 - **Create**: Create new records
+- **Get All Records**: Retrieve all records with pagination and filtering
+- **Get Record by ID**: Fetch a specific record by ID
 - **Update**: Update existing records
-- **Upsert**: Create or update records
 - **Delete**: Delete records
 
 **Configuration:**
 - **Model**: Laravel model class
-- **Record ID**: Required for Update/Delete operations
-- **Data Source**: Choose between manual field definition or JSON input
-- **Fields**: Define field names and values
-- **Upsert Key**: Field to check for existing records (for Upsert)
+- **Operation**: Choose the CRUD operation to perform
+- **Fields**: Define field names and values (for Create/Update)
+- **Record ID**: Required for Get by ID/Update/Delete operations
+- **Pagination**: Limit and offset for Get All operation
+- **Additional Fields**:
+  - **Where Conditions**: Advanced filtering with multiple operators
+  - **Order By**: Sort results by multiple fields
+
+**Example Where Conditions:**
+```json
+{
+  "conditions": [
+    {
+      "field": "status",
+      "operator": "=",
+      "value": "active"
+    },
+    {
+      "field": "created_at",
+      "operator": ">=",
+      "value": "2024-01-01"
+    }
+  ]
+}
+```
+
+**Example Order By:**
+```json
+{
+  "orders": [
+    {
+      "field": "created_at",
+      "direction": "desc"
+    },
+    {
+      "field": "name",
+      "direction": "asc"
+    }
+  ]
+}
+```
 
 ## 🔄 Workflow Examples
 
@@ -161,7 +166,7 @@ Laravel Eloquent Trigger (User created)
 
 ```
 Schedule Trigger 
-→ Laravel Eloquent Get (fetch updated records) 
+→ Laravel Eloquent CRUD (Get All Records) 
 → Transform Data 
 → External API Call
 ```
@@ -171,7 +176,7 @@ Schedule Trigger
 ```
 Laravel Eloquent Trigger (Order created) 
 → IF Node (check order amount) 
-→ Laravel Eloquent Set (update order status) 
+→ Laravel Eloquent CRUD (Update order status) 
 → Send confirmation email
 ```
 
