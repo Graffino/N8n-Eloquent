@@ -1,12 +1,12 @@
 <?php
 
-namespace N8n\Eloquent\Console\Commands;
+namespace Shortinc\N8nEloquent\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
-use N8n\Eloquent\Models\WebhookSubscription;
-use N8n\Eloquent\Services\WebhookService;
-use N8n\Eloquent\Services\SubscriptionRecoveryService;
+use Shortinc\N8nEloquent\Models\WebhookSubscription;
+use Shortinc\N8nEloquent\Services\WebhookService;
+use Shortinc\N8nEloquent\Services\SubscriptionRecoveryService;
 use Carbon\Carbon;
 
 class CleanupCommand extends Command

@@ -1,11 +1,11 @@
 <?php
 
-namespace N8n\Eloquent\Tests\Feature;
+namespace Shortinc\N8nEloquent\Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
-use N8n\Eloquent\Models\WebhookSubscription;
-use N8n\Eloquent\Services\WebhookService;
+use Shortinc\N8nEloquent\Models\WebhookSubscription;
+use Shortinc\N8nEloquent\Services\WebhookService;
 use Orchestra\Testbench\TestCase;
 use Carbon\Carbon;
 
@@ -30,7 +30,7 @@ class SubscriptionHealthMonitoringTest extends TestCase
     protected function getPackageProviders($app)
     {
         return [
-            'N8n\Eloquent\Providers\N8nEloquentServiceProvider',
+            'N8n\Eloquent\Providers\ShortincN8nEloquentServiceProvider',
         ];
     }
 

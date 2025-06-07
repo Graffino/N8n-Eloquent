@@ -1,6 +1,6 @@
 <?php
 
-namespace N8n\Eloquent\Console\Commands;
+namespace Shortinc\N8nEloquent\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;

@@ -1,6 +1,6 @@
 <?php
 
-namespace N8n\Eloquent\Services;
+namespace Shortinc\N8nEloquent\Services;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Filesystem\Filesystem;

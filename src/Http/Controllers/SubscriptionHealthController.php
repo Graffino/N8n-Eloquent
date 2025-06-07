@@ -1,13 +1,13 @@
 <?php
 
-namespace N8n\Eloquent\Http\Controllers;
+namespace Shortinc\N8nEloquent\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Log;
-use N8n\Eloquent\Models\WebhookSubscription;
-use N8n\Eloquent\Services\WebhookService;
+use Shortinc\N8nEloquent\Models\WebhookSubscription;
+use Shortinc\N8nEloquent\Services\WebhookService;
 use Carbon\Carbon;
 
 class SubscriptionHealthController extends Controller

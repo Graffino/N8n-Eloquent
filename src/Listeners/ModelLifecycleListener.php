@@ -1,9 +1,9 @@
 <?php
 
-namespace N8n\Eloquent\Listeners;
+namespace Shortinc\N8nEloquent\Listeners;
 
-use N8n\Eloquent\Events\BaseEvent;
-use N8n\Eloquent\Events\ModelLifecycleEvent;
+use Shortinc\N8nEloquent\Events\BaseEvent;
+use Shortinc\N8nEloquent\Events\ModelLifecycleEvent;
 
 class ModelLifecycleListener extends BaseEventListener
 {

@@ -1,13 +1,13 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use N8n\Eloquent\Http\Controllers\ModelController;
-use N8n\Eloquent\Http\Controllers\WebhookController;
-use N8n\Eloquent\Http\Controllers\WebhookManagementController;
-use N8n\Eloquent\Http\Controllers\SubscriptionHealthController;
-use N8n\Eloquent\Http\Middleware\AuthenticateN8n;
-use N8n\Eloquent\Http\Middleware\ValidateHmacSignature;
-use N8n\Eloquent\Http\Middleware\RateLimitWebhooks;
+use Shortinc\N8nEloquent\Http\Controllers\ModelController;
+use Shortinc\N8nEloquent\Http\Controllers\WebhookController;
+use Shortinc\N8nEloquent\Http\Controllers\WebhookManagementController;
+use Shortinc\N8nEloquent\Http\Controllers\SubscriptionHealthController;
+use Shortinc\N8nEloquent\Http\Middleware\AuthenticateN8n;
+use Shortinc\N8nEloquent\Http\Middleware\ValidateHmacSignature;
+use Shortinc\N8nEloquent\Http\Middleware\RateLimitWebhooks;
 
 $prefix = config('n8n-eloquent.api.prefix', 'api/n8n');
 $middleware = config('n8n-eloquent.api.middleware', ['api']);

@@ -1,6 +1,6 @@
 <?php
 
-namespace N8n\Eloquent\Events;
+namespace Shortinc\N8nEloquent\Events;
 
 use Illuminate\Database\Eloquent\Model;
 

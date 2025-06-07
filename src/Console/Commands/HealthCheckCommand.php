@@ -1,11 +1,11 @@
 <?php
 
-namespace N8n\Eloquent\Console\Commands;
+namespace Shortinc\N8nEloquent\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
-use N8n\Eloquent\Models\WebhookSubscription;
-use N8n\Eloquent\Services\WebhookService;
+use Shortinc\N8nEloquent\Models\WebhookSubscription;
+use Shortinc\N8nEloquent\Services\WebhookService;
 use Carbon\Carbon;
 
 class HealthCheckCommand extends Command

@@ -1,11 +1,11 @@
 <?php
 
-namespace N8n\Eloquent\Tests\Unit;
+namespace Shortinc\N8nEloquent\Tests\Unit;
 
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
-use N8n\Eloquent\Services\WebhookService;
-use N8n\Eloquent\Tests\Fixtures\Models\TestUser;
+use Shortinc\N8nEloquent\Services\WebhookService;
+use Shortinc\N8nEloquent\Tests\Fixtures\Models\TestUser;
 use Orchestra\Testbench\TestCase;
 
 class WebhookServiceTest extends TestCase
@@ -42,7 +42,7 @@ class WebhookServiceTest extends TestCase
     protected function getPackageProviders($app)
     {
         return [
-            'N8n\Eloquent\Providers\N8nEloquentServiceProvider',
+            'N8n\Eloquent\Providers\ShortincN8nEloquentServiceProvider',
         ];
     }
 

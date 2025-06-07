@@ -1,6 +1,6 @@
 <?php
 
-namespace N8n\Eloquent\Tests\Fixtures\Models;
+namespace Shortinc\N8nEloquent\Tests\Fixtures\Models;
 
 use Illuminate\Database\Eloquent\Model;
 

@@ -104,7 +104,11 @@ export class LaravelEloquentCrud implements INodeType {
 							{
 								displayName: 'Field Name',
 								name: 'fieldName',
-								type: 'string',
+								type: 'options',
+								typeOptions: {
+									loadOptionsMethod: 'getFields',
+									loadOptionsDependsOn: ['model'],
+								},
 								default: '',
 								description: 'Name of the field',
 							},
@@ -317,6 +321,35 @@ export class LaravelEloquentCrud implements INodeType {
 				} catch (error) {
 					console.error('❌ Failed to load models:', error);
 					throw new NodeOperationError(this.getNode(), `Failed to load models: ${(error as Error).message}`);
+				}
+			},
+			// Add new getFields method
+			async getFields(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				console.log('📋 getFields() called - Loading field options');
+				try {
+					const credentials = await this.getCredentials('laravelEloquentApi');
+					const baseUrl = credentials.baseUrl as string;
+					const model = this.getNodeParameter('model') as string;
+
+					console.log('🔑 Using credentials with baseUrl:', baseUrl);
+					console.log('🌐 Making request to get fields for model:', model);
+
+					const response = await this.helpers.httpRequestWithAuthentication.call(this, 'laravelEloquentApi', {
+						method: 'GET',
+						url: `${baseUrl}/api/n8n/models/${model}/fields`,
+						json: true,
+					});
+
+					console.log('✅ Fields response:', response);
+
+					return response.fields.map((field: any) => ({
+						name: field.label || field.name,
+						value: field.name,
+						description: `Type: ${field.type}${field.nullable ? ' (nullable)' : ''}`,
+					}));
+				} catch (error) {
+					console.error('❌ Failed to load fields:', error);
+					throw new NodeOperationError(this.getNode(), `Failed to load fields: ${(error as Error).message}`);
 				}
 			},
 		},

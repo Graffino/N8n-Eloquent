@@ -1,25 +1,25 @@
 <?php
 
-namespace N8n\Eloquent\Providers;
+namespace Shortinc\N8nEloquent\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Event;
-use N8n\Eloquent\Console\Commands\RegisterModelsCommand;
-use N8n\Eloquent\Console\Commands\SetupCommand;
-use N8n\Eloquent\Console\Commands\StatusCommand;
-use N8n\Eloquent\Console\Commands\MigrateWebhookSubscriptionsCommand;
-use N8n\Eloquent\Console\Commands\HealthCheckCommand;
-use N8n\Eloquent\Console\Commands\RecoveryCommand;
-use N8n\Eloquent\Console\Commands\CleanupCommand;
-use N8n\Eloquent\Events\ModelLifecycleEvent;
-use N8n\Eloquent\Events\ModelPropertyEvent;
-use N8n\Eloquent\Listeners\ModelLifecycleListener;
-use N8n\Eloquent\Listeners\ModelPropertyListener;
-use N8n\Eloquent\Services\ModelDiscoveryService;
-use N8n\Eloquent\Services\WebhookService;
-use N8n\Eloquent\Services\SubscriptionRecoveryService;
+use Shortinc\N8nEloquent\Console\Commands\RegisterModelsCommand;
+use Shortinc\N8nEloquent\Console\Commands\SetupCommand;
+use Shortinc\N8nEloquent\Console\Commands\StatusCommand;
+use Shortinc\N8nEloquent\Console\Commands\MigrateWebhookSubscriptionsCommand;
+use Shortinc\N8nEloquent\Console\Commands\HealthCheckCommand;
+use Shortinc\N8nEloquent\Console\Commands\RecoveryCommand;
+use Shortinc\N8nEloquent\Console\Commands\CleanupCommand;
+use Shortinc\N8nEloquent\Events\ModelLifecycleEvent;
+use Shortinc\N8nEloquent\Events\ModelPropertyEvent;
+use Shortinc\N8nEloquent\Listeners\ModelLifecycleListener;
+use Shortinc\N8nEloquent\Listeners\ModelPropertyListener;
+use Shortinc\N8nEloquent\Services\ModelDiscoveryService;
+use Shortinc\N8nEloquent\Services\WebhookService;
+use Shortinc\N8nEloquent\Services\SubscriptionRecoveryService;
 
-class N8nEloquentServiceProvider extends ServiceProvider
+class ShortincN8nEloquentServiceProvider extends ServiceProvider
 {
     /**
      * Register services.

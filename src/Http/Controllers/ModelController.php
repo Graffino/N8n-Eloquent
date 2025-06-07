@@ -1,13 +1,13 @@
 <?php
 
-namespace N8n\Eloquent\Http\Controllers;
+namespace Shortinc\N8nEloquent\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
-use N8n\Eloquent\Services\ModelDiscoveryService;
+use Shortinc\N8nEloquent\Services\ModelDiscoveryService;
 
 class ModelController extends Controller
 {

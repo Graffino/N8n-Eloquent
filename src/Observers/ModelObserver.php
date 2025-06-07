@@ -1,10 +1,10 @@
 <?php
 
-namespace N8n\Eloquent\Observers;
+namespace Shortinc\N8nEloquent\Observers;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Event;
-use N8n\Eloquent\Events\ModelLifecycleEvent;
+use Shortinc\N8nEloquent\Events\ModelLifecycleEvent;
 
 class ModelObserver
 {

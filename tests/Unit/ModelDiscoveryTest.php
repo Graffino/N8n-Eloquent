@@ -1,12 +1,12 @@
 <?php
 
-namespace N8n\Eloquent\Tests\Unit;
+namespace Shortinc\N8nEloquent\Tests\Unit;
 
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Config;
-use N8n\Eloquent\Services\ModelDiscoveryService;
-use N8n\Eloquent\Tests\Fixtures\Models\TestUser;
-use N8n\Eloquent\Tests\Fixtures\Models\TestUserCounter;
+use Shortinc\N8nEloquent\Services\ModelDiscoveryService;
+use Shortinc\N8nEloquent\Tests\Fixtures\Models\TestUser;
+use Shortinc\N8nEloquent\Tests\Fixtures\Models\TestUserCounter;
 use Orchestra\Testbench\TestCase;
 
 class ModelDiscoveryTest extends TestCase
@@ -40,7 +40,7 @@ class ModelDiscoveryTest extends TestCase
     protected function getPackageProviders($app)
     {
         return [
-            'N8n\Eloquent\Providers\N8nEloquentServiceProvider',
+            'N8n\Eloquent\Providers\ShortincN8nEloquentServiceProvider',
         ];
     }
 

@@ -1,12 +1,12 @@
 <?php
 
-namespace N8n\Eloquent\Console\Commands;
+namespace Shortinc\N8nEloquent\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
-use N8n\Eloquent\Services\ModelDiscoveryService;
-use N8n\Eloquent\Services\WebhookService;
+use Shortinc\N8nEloquent\Services\ModelDiscoveryService;
+use Shortinc\N8nEloquent\Services\WebhookService;
 
 class StatusCommand extends Command
 {

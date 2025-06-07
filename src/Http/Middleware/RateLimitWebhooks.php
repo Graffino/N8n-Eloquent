@@ -1,6 +1,6 @@
 <?php
 
-namespace N8n\Eloquent\Http\Middleware;
+namespace Shortinc\N8nEloquent\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;

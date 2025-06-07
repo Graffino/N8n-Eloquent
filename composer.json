@@ -1,12 +1,12 @@
 {
-    "name": "n8n/eloquent",
-    "description": "Laravel package for integrating Eloquent models with n8n workflows",
+    "name": "shortinc/n8n-eloquent",
+    "description": "A Laravel package for seamlessly integrating Eloquent models with n8n workflows. Built with AI assistance using Cursor IDE.",
     "type": "library",
     "license": "MIT",
     "authors": [
         {
-            "name": "n8n",
-            "email": "info@n8n.io"
+            "name": "Nick Ciolpan",
+            "email": "nick@short.inc"
         }
     ],
     "require": {
@@ -24,21 +24,30 @@
     },
     "autoload": {
         "psr-4": {
-            "N8n\\Eloquent\\": "src/"
+            "Shortinc\\N8nEloquent\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "N8n\\Eloquent\\Tests\\": "tests/"
+            "Shortinc\\N8nEloquent\\Tests\\": "tests/"
         }
     },
     "extra": {
         "laravel": {
             "providers": [
-                "N8n\\Eloquent\\Providers\\N8nEloquentServiceProvider"
+                "Shortinc\\N8nEloquent\\Providers\\ShortincN8nEloquentServiceProvider"
             ]
         }
     },
+    "keywords": [
+        "laravel",
+        "n8n",
+        "eloquent",
+        "webhooks",
+        "automation",
+        "workflow",
+        "shortinc"
+    ],
     "minimum-stability": "dev",
     "prefer-stable": true
 } 

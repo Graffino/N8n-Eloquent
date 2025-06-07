@@ -1,11 +1,11 @@
 <?php
 
-namespace N8n\Eloquent\Services;
+namespace Shortinc\N8nEloquent\Services;
 
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use N8n\Eloquent\Models\WebhookSubscription;
+use Shortinc\N8nEloquent\Models\WebhookSubscription;
 
 class WebhookService
 {

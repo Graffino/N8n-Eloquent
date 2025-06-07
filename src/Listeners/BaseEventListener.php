@@ -1,11 +1,11 @@
 <?php
 
-namespace N8n\Eloquent\Listeners;
+namespace Shortinc\N8nEloquent\Listeners;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use N8n\Eloquent\Events\BaseEvent;
-use N8n\Eloquent\Services\WebhookService;
+use Shortinc\N8nEloquent\Events\BaseEvent;
+use Shortinc\N8nEloquent\Services\WebhookService;
 
 abstract class BaseEventListener
 {

@@ -1,16 +1,16 @@
 <?php
 
-namespace N8n\Eloquent\Tests\Unit;
+namespace Shortinc\N8nEloquent\Tests\Unit;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Config;
-use N8n\Eloquent\Events\ModelLifecycleEvent;
-use N8n\Eloquent\Events\ModelPropertyEvent;
-use N8n\Eloquent\Listeners\ModelLifecycleListener;
-use N8n\Eloquent\Listeners\ModelPropertyListener;
-use N8n\Eloquent\Services\WebhookService;
-use N8n\Eloquent\Tests\Fixtures\Models\TestUser;
+use Shortinc\N8nEloquent\Events\ModelLifecycleEvent;
+use Shortinc\N8nEloquent\Events\ModelPropertyEvent;
+use Shortinc\N8nEloquent\Listeners\ModelLifecycleListener;
+use Shortinc\N8nEloquent\Listeners\ModelPropertyListener;
+use Shortinc\N8nEloquent\Services\WebhookService;
+use Shortinc\N8nEloquent\Tests\Fixtures\Models\TestUser;
 use Orchestra\Testbench\TestCase;
 
 class EventListenerTest extends TestCase
@@ -30,7 +30,7 @@ class EventListenerTest extends TestCase
     protected function getPackageProviders($app)
     {
         return [
-            \N8n\Eloquent\Providers\N8nEloquentServiceProvider::class,
+            \N8n\Eloquent\Providers\ShortincN8nEloquentServiceProvider::class,
         ];
     }
 
