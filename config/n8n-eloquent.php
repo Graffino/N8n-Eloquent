@@ -22,8 +22,8 @@ return [
         // Enable/disable rate limiting for API requests
         'rate_limiting' => [
             'enabled' => true,
-            'max_attempts' => 60,
-            'decay_minutes' => 1,
+            'max_attempts' => (int) env('N8N_ELOQUENT_RATE_LIMIT_ATTEMPTS', 60),
+            'decay_minutes' => (int) env('N8N_ELOQUENT_RATE_LIMIT_DECAY', 1),
         ],
     ],
 
@@ -48,16 +48,16 @@ return [
         'cache' => [
             'enabled' => env('N8N_ELOQUENT_CACHE_ENABLED', true),
             'store' => env('N8N_ELOQUENT_CACHE_STORE', null), // Use default cache store if null
-            'ttl' => env('N8N_ELOQUENT_CACHE_TTL', 3600), // Cache TTL in seconds (1 hour)
+            'ttl' => (int) env('N8N_ELOQUENT_CACHE_TTL', 3600), // Cache TTL in seconds (1 hour)
             'key_prefix' => env('N8N_ELOQUENT_CACHE_PREFIX', 'n8n_eloquent'),
             'tags' => ['n8n', 'webhooks'], // Cache tags for easier invalidation
         ],
         
         // Subscription health monitoring
         'health' => [
-            'stale_threshold_hours' => env('N8N_ELOQUENT_STALE_HOURS', 24), // Consider subscriptions stale after this many hours
-            'error_threshold_count' => env('N8N_ELOQUENT_ERROR_THRESHOLD', 5), // Max consecutive errors before marking as problematic
-            'health_check_interval' => env('N8N_ELOQUENT_HEALTH_INTERVAL', 3600), // Health check interval in seconds
+            'stale_threshold_hours' => (int) env('N8N_ELOQUENT_STALE_HOURS', 24), // Consider subscriptions stale after this many hours
+            'error_threshold_count' => (int) env('N8N_ELOQUENT_ERROR_THRESHOLD', 5), // Max consecutive errors before marking as problematic
+            'health_check_interval' => (int) env('N8N_ELOQUENT_HEALTH_INTERVAL', 3600), // Health check interval in seconds
             'auto_deactivate_errors' => env('N8N_ELOQUENT_AUTO_DEACTIVATE', false), // Auto-deactivate subscriptions with persistent errors
         ],
         
@@ -92,11 +92,11 @@ return [
         
         // Performance tuning
         'performance' => [
-            'query_cache_ttl' => env('N8N_ELOQUENT_QUERY_CACHE_TTL', 300), // Query result cache TTL in seconds
-            'bulk_operations_batch_size' => env('N8N_ELOQUENT_BULK_BATCH_SIZE', 500), // Batch size for bulk operations
-            'webhook_timeout' => env('N8N_ELOQUENT_WEBHOOK_TIMEOUT', 5), // Webhook request timeout in seconds
-            'max_retries' => env('N8N_ELOQUENT_MAX_RETRIES', 3), // Max retry attempts for failed webhooks
-            'retry_delay' => env('N8N_ELOQUENT_RETRY_DELAY', 60), // Delay between retries in seconds
+            'query_cache_ttl' => (int) env('N8N_ELOQUENT_QUERY_CACHE_TTL', 300), // Query result cache TTL in seconds
+            'bulk_operations_batch_size' => (int) env('N8N_ELOQUENT_BULK_BATCH_SIZE', 500), // Batch size for bulk operations
+            'webhook_timeout' => (int) env('N8N_ELOQUENT_WEBHOOK_TIMEOUT', 5), // Webhook request timeout in seconds
+            'max_retries' => (int) env('N8N_ELOQUENT_MAX_RETRIES', 3), // Max retry attempts for failed webhooks
+            'retry_delay' => (int) env('N8N_ELOQUENT_RETRY_DELAY', 60), // Delay between retries in seconds
         ],
         
         // Migration settings
@@ -112,7 +112,7 @@ return [
             'encrypt_webhook_urls' => env('N8N_ELOQUENT_ENCRYPT_URLS', false), // Encrypt webhook URLs in database
             'validate_webhook_ssl' => env('N8N_ELOQUENT_VALIDATE_SSL', true), // Validate SSL certificates for webhook URLs
             'allowed_domains' => env('N8N_ELOQUENT_ALLOWED_DOMAINS', null), // Comma-separated list of allowed webhook domains
-            'rate_limit_per_subscription' => env('N8N_ELOQUENT_RATE_LIMIT_SUBSCRIPTION', 100), // Max triggers per subscription per hour
+            'rate_limit_per_subscription' => (int) env('N8N_ELOQUENT_RATE_LIMIT_SUBSCRIPTION', 100), // Max triggers per subscription per hour
         ],
     ],
 
@@ -178,7 +178,7 @@ return [
             'skip_unchanged' => env('N8N_ELOQUENT_SKIP_UNCHANGED_PROPERTIES', true), // Skip setter events if value didn't change
             'rate_limit' => [
                 'enabled' => env('N8N_ELOQUENT_RATE_LIMIT_ENABLED', true),
-                'decay_minutes' => env('N8N_ELOQUENT_RATE_LIMIT_DECAY_MINUTES', 1),
+                'decay_minutes' => (int) env('N8N_ELOQUENT_RATE_LIMIT_DECAY_MINUTES', 1),
             ],
         ],
         
@@ -197,8 +197,13 @@ return [
         // Error handling
         'throw_on_error' => false,
         
-        // Max trigger depth
-        'max_trigger_depth' => env('N8N_ELOQUENT_MAX_TRIGGER_DEPTH', 1),
+        // Infinite loop prevention
+        'loop_prevention' => [
+            'enabled' => env('N8N_ELOQUENT_LOOP_PREVENTION_ENABLED', true),
+            'max_trigger_depth' => (int) env('N8N_ELOQUENT_MAX_TRIGGER_DEPTH', 1),
+            'same_model_cooldown' => (int) env('N8N_ELOQUENT_SAME_MODEL_COOLDOWN', 1), // minutes
+            'track_chain' => env('N8N_ELOQUENT_TRACK_CHAIN', true),
+        ],
     ],
 
     /*

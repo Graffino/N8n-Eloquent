@@ -9,14 +9,35 @@ import {
 	IHttpRequestMethods,
 	ILoadOptionsFunctions,
 	INodePropertyOptions,
+	IHttpRequestOptions,
 } from 'n8n-workflow';
+
+interface IMetadata extends IDataObject {
+	source_trigger?: {
+		node_id: string;
+		workflow_id: string;
+		model: string;
+		event: string;
+		timestamp: string;
+	} | undefined;
+	workflow_id?: string;
+	node_id?: string;
+	execution_id?: string;
+	is_n8n_crud?: boolean;
+}
+
+interface IItemMetadata {
+	metadata?: {
+		source_trigger?: IMetadata['source_trigger'];
+	};
+}
 
 export class LaravelEloquentCrud implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'Laravel Eloquent CRUD',
 		name: 'laravelEloquentCrud',
 		icon: 'file:laravel.svg',
-		group: ['input'],
+		group: ['transform'],
 		version: 1,
 		subtitle: '={{$parameter["operation"] + ": " + $parameter["model"]}}',
 		description: 'Perform CRUD operations on Laravel Eloquent models',
@@ -314,10 +335,14 @@ export class LaravelEloquentCrud implements INodeType {
 
 					console.log('✅ Models response:', response);
 
-					return response.models.map((model: any) => ({
-						name: model.name,
-						value: encodeURIComponent(model.class),
+					const models = response.models.map((model: any) => ({
+						name: model.name.split('\\').pop(),
+						value: model.class,
+						description: `Full class: ${model.class}`,
 					}));
+					
+					console.log('📋 Returning models:', models);
+					return models;
 				} catch (error) {
 					console.error('❌ Failed to load models:', error);
 					throw new NodeOperationError(this.getNode(), `Failed to load models: ${(error as Error).message}`);
@@ -357,108 +382,141 @@ export class LaravelEloquentCrud implements INodeType {
 
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 		const items = this.getInputData();
-		const returnData: IDataObject[] = [];
-		const length = items.length;
+		const returnData: INodeExecutionData[] = [];
+		
 		const credentials = await this.getCredentials('laravelEloquentApi');
-
-		const operation = this.getNodeParameter('operation', 0) as string;
+		const baseUrl = credentials.baseUrl as string;
 		const model = this.getNodeParameter('model', 0) as string;
+		const operation = this.getNodeParameter('operation', 0) as string;
 
-		for (let i = 0; i < length; i++) {
-			try {
-				let response: any;
-				const baseUrl = `${credentials.baseUrl}/api/n8n/models/${encodeURIComponent(model)}`;
+		// Get workflow execution context
+		const workflowId = this.getWorkflow().id;
+		const nodeId = this.getNode().id;
+		const executionId = this.getExecutionId();
 
-				if (operation === 'create') {
-					// Handle Create operation
-					const fields = this.getNodeParameter('fields.fieldValues', i, []) as IDataObject[];
-					const data = fields.reduce((obj, field) => {
-						obj[field.fieldName as string] = field.fieldValue;
-						return obj;
-					}, {} as IDataObject);
+		// Add metadata to track n8n operations
+		const metadata: IMetadata = {
+			workflow_id: workflowId,
+			node_id: nodeId,
+			execution_id: executionId,
+			is_n8n_crud: true,
+		};
 
-					response = await this.helpers.httpRequestWithAuthentication.call(this, 'laravelEloquentApi', {
-						method: 'POST',
-						url: `${baseUrl}/records`,
+		try {
+			let responseData: IDataObject | IDataObject[] = [];
+			
+			// Construct the base URL for model operations
+			const modelApiUrl = `${baseUrl}/api/n8n/models/${encodeURIComponent(model)}/records`;
+
+			switch (operation) {
+				case 'create': {
+					const fields = this.getNodeParameter('fields.fieldValues', 0, []) as IDataObject[];
+					const data: IDataObject = {};
+					
+					for (const field of fields) {
+						data[field.fieldName as string] = field.fieldValue;
+					}
+
+					// Add metadata to the request
+					data.metadata = metadata;
+
+					const options: IHttpRequestOptions = {
+						method: 'POST' as IHttpRequestMethods,
+						url: modelApiUrl,
 						body: data,
 						json: true,
-					});
-
-				} else if (operation === 'getAll') {
-					// Handle Get All operation
-					const limit = this.getNodeParameter('limit', i) as number;
-					const offset = this.getNodeParameter('offset', i) as number;
-					const additionalFields = this.getNodeParameter('additionalFields', i) as IDataObject;
-
-					const qs: IDataObject = {
-						limit,
-						offset,
 					};
 
-					if (additionalFields.where) {
-						qs.where = (additionalFields.where as IDataObject).conditions;
+					responseData = await this.helpers.httpRequestWithAuthentication.call(this, 'laravelEloquentApi', options);
+					break;
+				}
+
+				case 'getAll': {
+					const limit = this.getNodeParameter('limit', 0) as number;
+					const offset = this.getNodeParameter('offset', 0) as number;
+
+					const options: IHttpRequestOptions = {
+						method: 'GET' as IHttpRequestMethods,
+						url: modelApiUrl,
+						qs: {
+							limit,
+							offset,
+						},
+						json: true,
+					};
+
+					responseData = await this.helpers.httpRequestWithAuthentication.call(this, 'laravelEloquentApi', options);
+					break;
+				}
+
+				case 'getById': {
+					const recordId = this.getNodeParameter('recordId', 0) as string;
+
+					const options: IHttpRequestOptions = {
+						method: 'GET' as IHttpRequestMethods,
+						url: `${modelApiUrl}/${recordId}`,
+						json: true,
+					};
+
+					responseData = await this.helpers.httpRequestWithAuthentication.call(this, 'laravelEloquentApi', options);
+					break;
+				}
+
+				case 'update': {
+					const recordId = this.getNodeParameter('recordId', 0) as string;
+					const fields = this.getNodeParameter('fields.fieldValues', 0, []) as IDataObject[];
+					const data: IDataObject = {};
+					
+					for (const field of fields) {
+						data[field.fieldName as string] = field.fieldValue;
 					}
 
-					if (additionalFields.orderBy) {
-						qs.orderBy = (additionalFields.orderBy as IDataObject).orders;
-					}
+					// Add metadata to the request
+					data.metadata = metadata;
 
-					response = await this.helpers.httpRequestWithAuthentication.call(this, 'laravelEloquentApi', {
-						method: 'GET',
-						url: `${baseUrl}/records`,
-						qs,
-						json: true,
-					});
-
-				} else if (operation === 'getById') {
-					// Handle Get By ID operation
-					const recordId = this.getNodeParameter('recordId', i) as string;
-
-					response = await this.helpers.httpRequestWithAuthentication.call(this, 'laravelEloquentApi', {
-						method: 'GET',
-						url: `${baseUrl}/records/${recordId}`,
-						json: true,
-					});
-
-				} else if (operation === 'update') {
-					// Handle Update operation
-					const recordId = this.getNodeParameter('recordId', i) as string;
-					const fields = this.getNodeParameter('fields.fieldValues', i, []) as IDataObject[];
-					const data = fields.reduce((obj, field) => {
-						obj[field.fieldName as string] = field.fieldValue;
-						return obj;
-					}, {} as IDataObject);
-
-					response = await this.helpers.httpRequestWithAuthentication.call(this, 'laravelEloquentApi', {
-						method: 'PUT',
-						url: `${baseUrl}/records/${recordId}`,
+					const options: IHttpRequestOptions = {
+						method: 'PUT' as IHttpRequestMethods,
+						url: `${modelApiUrl}/${recordId}`,
 						body: data,
 						json: true,
-					});
+					};
 
-				} else if (operation === 'delete') {
-					// Handle Delete operation
-					const recordId = this.getNodeParameter('recordId', i) as string;
+					responseData = await this.helpers.httpRequestWithAuthentication.call(this, 'laravelEloquentApi', options);
+					break;
+				}
 
-					response = await this.helpers.httpRequestWithAuthentication.call(this, 'laravelEloquentApi', {
-						method: 'DELETE',
-						url: `${baseUrl}/records/${recordId}`,
+				case 'delete': {
+					const recordId = this.getNodeParameter('recordId', 0) as string;
+
+					const options: IHttpRequestOptions = {
+						method: 'DELETE' as IHttpRequestMethods,
+						url: `${modelApiUrl}/${recordId}`,
 						json: true,
-					});
+					};
+
+					responseData = await this.helpers.httpRequestWithAuthentication.call(this, 'laravelEloquentApi', options);
+					break;
 				}
 
-				if (response !== undefined) {
-					returnData.push(response);
-				}
-			} catch (error: any) {
-				if (this.continueOnFail()) {
-					returnData.push({ error: error.message });
-					continue;
-				}
-				throw error;
+				default:
+					throw new NodeOperationError(this.getNode(), `Operation ${operation} not supported`);
 			}
-		}
 
-		return [this.helpers.returnJsonArray(returnData)];
+			// Handle response data
+			if (Array.isArray(responseData)) {
+				returnData.push(...responseData.map(item => ({ json: item })));
+			} else {
+				returnData.push({ json: responseData });
+			}
+
+			return [returnData];
+		} catch (error: any) {
+			if (error.response) {
+				throw new NodeOperationError(this.getNode(), `API Error: ${error.response.data?.error || error.message}`, {
+					description: error.response.data?.message || 'Unknown API error',
+				});
+			}
+			throw error;
+		}
 	}
 } 

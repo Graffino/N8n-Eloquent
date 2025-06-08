@@ -21,6 +21,22 @@ interface INodeParameters {
 	expectedSourceIp: string;
 }
 
+interface IMetadata extends IDataObject {
+	source_trigger?: {
+		node_id: string;
+		workflow_id: string;
+		model: string;
+		event: string;
+		timestamp: string;
+	} | undefined;
+}
+
+interface IItemMetadata {
+	metadata?: {
+		source_trigger?: IMetadata['source_trigger'];
+	};
+}
+
 export class LaravelEloquentTrigger implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'Laravel Eloquent Trigger',
@@ -151,8 +167,9 @@ export class LaravelEloquentTrigger implements INodeType {
 					console.log('✅ Models response:', response);
 
 					const models = response.models.map((model: any) => ({
-						name: model.name,
+						name: model.name.split('\\').pop(),
 						value: model.class,
+						description: `Full class: ${model.class}`,
 					}));
 					
 					console.log('📋 Returning models:', models);
@@ -240,19 +257,11 @@ export class LaravelEloquentTrigger implements INodeType {
 						json: true,
 					});
 					
-					console.log('📨 Laravel response:', response);
-					
-					// Store the subscription ID for later cleanup
-					if (response && response.subscription_id) {
-						webhookData.subscriptionId = response.subscription_id;
-						console.log('💾 Stored subscription ID:', response.subscription_id);
-					}
-					
-					console.log('✅ Laravel Eloquent webhook registered successfully');
+					console.log('✅ Webhook registration successful:', response);
 					return true;
 				} catch (error) {
-					console.error('❌ Failed to register Laravel Eloquent webhook:', error);
-					throw new NodeOperationError(this.getNode(), `Failed to register webhook: ${error instanceof Error ? error.message : String(error)}`);
+					console.error('❌ Webhook registration failed:', error);
+					throw new NodeOperationError(this.getNode(), `Failed to register webhook: ${(error as Error).message}`);
 				}
 			},
 
@@ -321,6 +330,19 @@ export class LaravelEloquentTrigger implements INodeType {
 		
 		const nodeParameters = (webhookData.nodeParameters || {}) as INodeParameters;
 		console.log('📨 Node parameters:', nodeParameters);
+
+		// Add trigger node information to metadata
+		if (!bodyData.metadata) {
+			bodyData.metadata = {};
+		}
+
+		(bodyData.metadata as IDataObject).source_trigger = {
+			node_id: this.getNode().id,
+			workflow_id: this.getWorkflow().id,
+			model: nodeParameters.model,
+			event: bodyData.event as string,
+			timestamp: new Date().toISOString()
+		};
 
 		// Helper functions for security validation
 		const getClientIP = (req: any, headers: IDataObject): string => {

@@ -38,7 +38,28 @@ class WebhookService
         string $webhookUrl,
         array $properties = []
     ): array {
-        // Create the subscription in database
+        // Get existing subscriptions for this model and node
+        $existingSubscriptions = WebhookSubscription::where('model_class', $modelClass)
+            ->where('webhook_url', 'LIKE', '%' . parse_url($webhookUrl, PHP_URL_HOST) . '%')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // If we have more than 2 subscriptions (test and production), delete the older ones
+        if ($existingSubscriptions->count() > 2) {
+            $toKeep = $existingSubscriptions->take(2); // Keep the 2 most recent ones
+            $toDelete = $existingSubscriptions->slice(2);
+            
+            foreach ($toDelete as $subscription) {
+                $subscription->delete();
+                Log::channel(config('n8n-eloquent.logging.channel'))
+                    ->info("Deleted old webhook subscription for model {$modelClass}", [
+                        'subscription_id' => $subscription->id,
+                        'webhook_url' => $subscription->webhook_url,
+                    ]);
+            }
+        }
+
+        // Create the new subscription
         $subscription = WebhookSubscription::create([
             'model_class' => $modelClass,
             'events' => $events,
@@ -57,7 +78,10 @@ class WebhookService
                 'webhook_url' => $webhookUrl,
             ]);
 
-        return $subscription->toLegacyArray();
+        return [
+            'message' => 'Webhook subscription created successfully',
+            'subscription' => $subscription->toLegacyArray(),
+        ];
     }
 
     /**
@@ -140,6 +164,90 @@ class WebhookService
     }
 
     /**
+     * Check if the current event is part of an infinite loop.
+     *
+     * @param  string  $modelClass
+     * @param  string  $event
+     * @param  mixed  $model
+     * @param  array  $metadata
+     * @return bool
+     */
+    protected function isInfiniteLoop(string $modelClass, string $event, $model, array $metadata): bool
+    {
+        // Check if loop prevention is enabled
+        if (!config('n8n-eloquent.events.loop_prevention.enabled', true)) {
+            return false;
+        }
+
+        // 1. Check if this event was triggered by n8n CRUD operation
+        if (!empty($metadata['is_n8n_crud'])) {
+            // If we have source trigger info, this means we're in a workflow loop
+            if (!empty($metadata['source_trigger'])) {
+                $sourceTrigger = $metadata['source_trigger'];
+                Log::channel(config('n8n-eloquent.logging.channel'))
+                    ->warning("Workflow-level loop detected", [
+                        'model' => $modelClass,
+                        'event' => $event,
+                        'workflow_id' => $sourceTrigger['workflow_id'] ?? null,
+                        'node_id' => $sourceTrigger['node_id'] ?? null,
+                        'trigger_model' => $sourceTrigger['model'] ?? null,
+                        'trigger_event' => $sourceTrigger['event'] ?? null,
+                        'trigger_timestamp' => $sourceTrigger['timestamp'] ?? null
+                    ]);
+                return true;
+            }
+        }
+
+        // 2. Check trigger depth
+        $maxTriggerDepth = config('n8n-eloquent.events.loop_prevention.max_trigger_depth', 1);
+        $currentDepth = $metadata['trigger_depth'] ?? 1;
+        
+        if ($currentDepth > $maxTriggerDepth) {
+            Log::channel(config('n8n-eloquent.logging.channel'))
+                ->warning("Maximum trigger depth reached for {$modelClass} {$event} event", [
+                    'trigger_chain' => $metadata['trigger_chain'] ?? [],
+                    'max_depth' => $maxTriggerDepth
+                ]);
+            return true;
+        }
+
+        // 3. Check same model cooldown
+        $cooldownMinutes = (int) config('n8n-eloquent.events.loop_prevention.same_model_cooldown', 1);
+        $modelId = $model->getKey();
+        $cacheKey = "n8n_webhook:{$modelClass}:{$modelId}:{$event}";
+        
+        if (Cache::has($cacheKey)) {
+            Log::channel(config('n8n-eloquent.logging.channel'))
+                ->warning("Cooldown period active for {$modelClass} {$event} event", [
+                    'model_id' => $modelId,
+                    'cooldown_minutes' => $cooldownMinutes
+                ]);
+            return true;
+        }
+        
+        // Set cooldown cache
+        Cache::put($cacheKey, true, now()->addMinutes($cooldownMinutes));
+
+        // 4. Check trigger chain for cycles if enabled
+        if (config('n8n-eloquent.events.loop_prevention.track_chain', true)) {
+            $triggerChain = $metadata['trigger_chain'] ?? [];
+            foreach ($triggerChain as $trigger) {
+                if ($trigger['model'] === $modelClass && 
+                    $trigger['id'] === $modelId && 
+                    $trigger['event'] === $event) {
+                    Log::channel(config('n8n-eloquent.logging.channel'))
+                        ->warning("Cycle detected in trigger chain for {$modelClass} {$event} event", [
+                            'trigger_chain' => $triggerChain
+                        ]);
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Trigger a webhook for a model event.
      *
      * @param  string  $modelClass
@@ -159,41 +267,42 @@ class WebhookService
             return;
         }
 
+        // Initialize metadata if not present
+        $metadata = $additionalPayload['metadata'] ?? [];
+        
+        // Ensure source_trigger is properly structured
+        if (!empty($metadata['source_trigger'])) {
+            $sourceTrigger = $metadata['source_trigger'];
+            if (!isset($sourceTrigger['timestamp'])) {
+                $sourceTrigger['timestamp'] = now()->toIso8601String();
+            }
+            $metadata['source_trigger'] = $sourceTrigger;
+        }
+
+        $metadata['trigger_chain'] = $metadata['trigger_chain'] ?? [];
+        $metadata['trigger_depth'] = ($metadata['trigger_depth'] ?? 0) + 1;
+
+        // Check for infinite loop
+        if ($this->isInfiniteLoop($modelClass, $event, $model, $metadata)) {
+            return;
+        }
+
+        // Add current event to trigger chain
+        $metadata['trigger_chain'][] = [
+            'event' => $event,
+            'model' => $modelClass,
+            'id' => $model->getKey(),
+            'depth' => $metadata['trigger_depth']
+        ];
+
         // Prepare the payload
         $payload = array_merge([
             'event' => $event,
             'model' => $modelClass,
             'timestamp' => now()->toIso8601String(),
             'data' => $model->toArray(),
-            'metadata' => [
-                'trigger_chain' => $additionalPayload['metadata']['trigger_chain'] ?? [],
-                'source_event' => $event,
-                'source_model' => $modelClass,
-                'source_id' => $model->getKey(),
-                'trigger_depth' => isset($additionalPayload['metadata']['trigger_depth']) 
-                    ? $additionalPayload['metadata']['trigger_depth'] + 1 
-                    : 1
-            ]
+            'metadata' => $metadata
         ], $additionalPayload);
-
-        // Check for infinite loop
-        $maxTriggerDepth = config('n8n-eloquent.events.max_trigger_depth', 5);
-        if ($payload['metadata']['trigger_depth'] > $maxTriggerDepth) {
-            Log::channel(config('n8n-eloquent.logging.channel'))
-                ->warning("Maximum trigger depth reached for {$modelClass} {$event} event", [
-                    'trigger_chain' => $payload['metadata']['trigger_chain'],
-                    'max_depth' => $maxTriggerDepth
-                ]);
-            return;
-        }
-
-        // Add current event to trigger chain
-        $payload['metadata']['trigger_chain'][] = [
-            'event' => $event,
-            'model' => $modelClass,
-            'id' => $model->getKey(),
-            'depth' => $payload['metadata']['trigger_depth']
-        ];
 
         // Send the webhook to each subscription
         foreach ($subscriptions as $subscription) {
