@@ -1,5 +1,5 @@
 {
-  "name": "n8n-nodes-laravel-eloquent",
+  "name": "@shortinc/n8n-eloquent-nodes",
   "version": "2.0.0",
   "description": "n8n nodes for Laravel Eloquent integration - trigger workflows on model events and perform CRUD operations",
   "main": "dist/index.js",
@@ -33,14 +33,18 @@
     "database",
     "orm",
     "webhook",
-    "trigger"
+    "trigger",
+    "shortinc"
   ],
-  "author": "n8n-eloquent",
+  "author": {
+    "name": "Nick Ciolpan",
+    "email": "nick@short.inc"
+  },
   "license": "MIT",
-  "homepage": "https://github.com/n8n-io/n8n-eloquent",
+  "homepage": "https://github.com/shortinc/n8n-eloquent",
   "repository": {
     "type": "git",
-    "url": "https://github.com/n8n-io/n8n-eloquent.git"
+    "url": "https://github.com/shortinc/n8n-eloquent.git"
   },
   "engines": {
     "node": ">=18.17.0"
