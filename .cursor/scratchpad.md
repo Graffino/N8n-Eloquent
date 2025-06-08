@@ -664,3 +664,147 @@ Now that Phase 1 (Laravel Package Development) is complete, we begin Phase 4: im
 - **Phase 4**: 🚧 0% Complete (STARTING NOW)
 
 **Next Action**: Begin Task 4.1.1 - Create migration for `n8n_webhook_subscriptions` table 
+
+## Phase 4: Additional Node Development (NEW)
+
+### Background
+We need to create three additional nodes to enhance the Laravel-n8n integration:
+1. Laravel Event Dispatcher Node: Send events to Laravel
+2. Laravel Event Listener Node: Listen for events dispatched from Laravel
+3. Laravel Job Dispatcher Node: Dispatch jobs to Laravel queue
+
+### Key Challenges and Analysis
+1. **Event System Integration**
+   - Need to handle both synchronous and asynchronous events
+   - Must maintain proper event payload structure
+   - Should support event broadcasting configurations
+   - Need to handle event listeners and subscribers
+
+2. **Job Queue Integration**
+   - Support for different queue drivers (redis, database, etc.)
+   - Handle job delays and scheduling
+   - Support job middleware and job batching
+   - Manage failed job handling
+
+3. **Security and Performance**
+   - Ensure secure event transmission
+   - Handle large payload sizes
+   - Manage queue worker configurations
+   - Monitor job and event processing
+
+### High-level Task Breakdown
+
+#### 1. Laravel Event Dispatcher Node
+**Success Criteria:**
+- Can dispatch any Laravel event with custom payload
+- Supports both sync and async event processing
+- Handles event broadcasting configurations
+- Provides proper error handling and logging
+
+**Tasks:**
+a. Create node structure with event configuration UI
+b. Implement event class discovery in Laravel
+c. Add payload builder interface
+d. Implement event dispatch mechanism
+e. Add broadcasting support
+f. Create comprehensive testing suite
+
+#### 2. Laravel Event Listener Node
+**Success Criteria:**
+- Can listen for any Laravel event
+- Supports filtering and conditional processing
+- Handles both sync and async events
+- Provides proper error recovery
+
+**Tasks:**
+a. Create node structure with event listener UI
+b. Implement webhook endpoint for event reception
+c. Add event filtering and routing
+d. Implement payload processing
+e. Add error handling and recovery
+f. Create comprehensive testing suite
+
+#### 3. Laravel Job Dispatcher Node
+**Success Criteria:**
+- Can dispatch any Laravel job
+- Supports job delays and scheduling
+- Handles different queue drivers
+- Provides job status monitoring
+
+**Tasks:**
+a. Create node structure with job configuration UI
+b. Implement job class discovery in Laravel
+c. Add job parameter configuration
+d. Implement queue driver selection
+e. Add job monitoring and status tracking
+f. Create comprehensive testing suite
+
+### Implementation Timeline
+
+#### Week 1: Event System Development
+1. Day 1-2: Laravel Event Dispatcher Node
+   - Basic node structure and UI
+   - Event class discovery
+   - Event dispatch implementation
+
+2. Day 3-4: Laravel Event Listener Node
+   - Basic node structure and UI
+   - Webhook endpoint implementation
+   - Event routing system
+
+3. Day 5: Testing and Documentation
+   - Unit and integration tests
+   - Documentation updates
+   - Example workflows
+
+#### Week 2: Job System Development
+1. Day 1-2: Laravel Job Dispatcher Node
+   - Basic node structure and UI
+   - Job class discovery
+   - Queue integration
+
+2. Day 3-4: Advanced Features
+   - Job scheduling
+   - Status monitoring
+   - Failed job handling
+
+3. Day 5: Testing and Documentation
+   - Unit and integration tests
+   - Documentation updates
+   - Example workflows
+
+### Required Laravel Package Updates
+1. New endpoints for:
+   - Event class discovery
+   - Job class discovery
+   - Event webhook reception
+   - Job status monitoring
+
+2. New services for:
+   - Event handling and routing
+   - Job queue management
+   - Status tracking and monitoring
+
+3. Security updates:
+   - Event authentication
+   - Job authorization
+   - Queue access control
+
+### Testing Strategy
+1. Unit Tests:
+   - Event dispatch functionality
+   - Job dispatch functionality
+   - Payload handling
+   - Error recovery
+
+2. Integration Tests:
+   - End-to-end event flow
+   - Queue worker processing
+   - Broadcasting scenarios
+   - Error handling scenarios
+
+3. Performance Tests:
+   - High-volume event processing
+   - Queue processing under load
+   - Memory usage monitoring
+   - Response time benchmarking
