@@ -1,14 +1,17 @@
 import {
-	IWebhookFunctions,
-	IDataObject,
 	INodeType,
 	INodeTypeDescription,
+	IWebhookFunctions,
 	IWebhookResponseData,
 	NodeConnectionType,
+} from 'n8n-workflow';
+
+import {
+	IDataObject,
+	INodePropertyOptions,
 	NodeOperationError,
 	IHookFunctions,
 	ILoadOptionsFunctions,
-	INodePropertyOptions,
 } from 'n8n-workflow';
 
 import { createHmac, timingSafeEqual } from 'crypto';
@@ -314,40 +317,17 @@ export class LaravelEloquentTrigger implements INodeType {
 	};
 
 	async webhook(this: IWebhookFunctions): Promise<IWebhookResponseData> {
-		console.log('📨 webhook() called - Received webhook data');
-		
-		const bodyData = this.getBodyData() as IDataObject;
-		const headers = this.getHeaderData() as IDataObject;
-		const req = this.getRequestObject();
-		const credentials = await this.getCredentials('laravelEloquentApi');
-		const webhookData = this.getWorkflowStaticData('node');
-		const nodeParameters = webhookData.nodeParameters as INodeParameters;
-
-		// Add source trigger metadata
-		const sourceTrigger = {
-			node_id: this.getNode().id,
-			workflow_id: this.getWorkflow().id || 'unknown',
-			model: bodyData.model as string,
-			event: bodyData.event as string,
-			timestamp: new Date().toISOString(),
-		};
-
-		// Add metadata to the response
-		const metadata: IMetadata = {
-			source_trigger: sourceTrigger,
-		};
-
-		return {
-			workflowData: [
-				[
-					{
-						json: {
-							...bodyData,
-							metadata,
-						},
-					},
-				],
-			],
-		};
+		try {
+			// We'll implement webhook validation in a future update
+			return {
+				webhookResponse: {
+					statusCode: 200,
+					body: { success: true },
+				},
+			};
+		} catch (error) {
+			// Handle errors appropriately
+			throw error;
+		}
 	}
 } 

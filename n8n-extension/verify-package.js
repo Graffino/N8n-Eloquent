@@ -40,7 +40,7 @@ try {
   const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
   
   // Required fields
-  if (packageJson.name === 'n8n-nodes-laravel-eloquent') {
+  if (packageJson.name === '@shortinc/n8n-eloquent-nodes') {
     checkPassed('Package name is correct');
   } else {
     checkFailed('Package name is incorrect');

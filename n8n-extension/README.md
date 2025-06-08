@@ -26,18 +26,19 @@ A comprehensive n8n community node package that provides seamless integration wi
 
 2. **n8n Instance**: You need a running n8n instance (self-hosted or n8n Cloud)
 
-### Install the n8n Extension
+### Community Nodes (Recommended)
 
-#### Option 1: Via n8n Community Nodes (Recommended)
-1. Go to **Settings** → **Community Nodes** in your n8n instance
-2. Click **Install a community node**
-3. Enter: `n8n-nodes-laravel-eloquent`
+1. Go to **Settings > Community Nodes**
+2. Select **Install**
+3. Enter: `@shortinc/n8n-eloquent-nodes`
 4. Click **Install**
 
-#### Option 2: Manual Installation
+### Manual Installation
+
+You can also install the package manually:
+
 ```bash
-# In your n8n installation directory
-npm install n8n-nodes-laravel-eloquent
+npm install @shortinc/n8n-eloquent-nodes
 ```
 
 ## 🔧 Configuration
