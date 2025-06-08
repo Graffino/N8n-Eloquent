@@ -103,8 +103,8 @@ class ModelController extends Controller
      */
     public function fields(Request $request, string $model)
     {
-        // URL decode model name
-        $modelClass = urldecode($model);
+        // Convert forward slashes back to backslashes for namespace
+        $modelClass = str_replace('/', '\\', $model);
         
         $metadata = $this->modelDiscovery->getModelMetadata($modelClass);
         

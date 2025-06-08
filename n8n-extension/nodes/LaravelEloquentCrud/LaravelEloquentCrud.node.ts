@@ -356,25 +356,61 @@ export class LaravelEloquentCrud implements INodeType {
 					const baseUrl = credentials.baseUrl as string;
 					const model = this.getNodeParameter('model') as string;
 
+					if (!model) {
+						console.error('❌ No model selected');
+						throw new NodeOperationError(this.getNode(), 'Please select a model first');
+					}
+
 					console.log('🔑 Using credentials with baseUrl:', baseUrl);
 					console.log('🌐 Making request to get fields for model:', model);
+					
+					// Encode the model name properly for the URL, replacing backslashes with forward slashes
+					const encodedModel = model.replace(/\\/g, '/');
+					const url = `${baseUrl}/api/n8n/models/${encodedModel}/fields`;
+					console.log('🔗 Request URL:', url);
 
-					const response = await this.helpers.httpRequestWithAuthentication.call(this, 'laravelEloquentApi', {
-						method: 'GET',
-						url: `${baseUrl}/api/n8n/models/${model}/fields`,
-						json: true,
-					});
+					try {
+						const response = await this.helpers.httpRequestWithAuthentication.call(this, 'laravelEloquentApi', {
+							method: 'GET',
+							url,
+							json: true,
+						});
 
-					console.log('✅ Fields response:', response);
+						console.log('✅ Fields response:', response);
 
-					return response.fields.map((field: any) => ({
-						name: field.label || field.name,
-						value: field.name,
-						description: `Type: ${field.type}${field.nullable ? ' (nullable)' : ''}`,
-					}));
-				} catch (error) {
+						if (!response.fields || !Array.isArray(response.fields)) {
+							console.error('❌ Invalid response format:', response);
+							throw new NodeOperationError(
+								this.getNode(),
+								'Invalid response format from API. Expected fields array.'
+							);
+						}
+
+						return response.fields.map((field: any) => ({
+							name: field.label || field.name,
+							value: field.name,
+							description: `Type: ${field.type}${field.nullable ? ' (nullable)' : ''}`,
+						}));
+					} catch (httpError: any) {
+						console.error('❌ HTTP request failed:', {
+							status: httpError.response?.status,
+							statusText: httpError.response?.statusText,
+							data: httpError.response?.data,
+							error: httpError.message,
+						});
+						
+						throw new NodeOperationError(
+							this.getNode(),
+							`Failed to load fields: ${httpError.message}`,
+							{
+								description: httpError.response?.data?.message 
+									|| 'Could not connect to Laravel API. Please check your credentials and ensure the API is running.',
+							}
+						);
+					}
+				} catch (error: any) {
 					console.error('❌ Failed to load fields:', error);
-					throw new NodeOperationError(this.getNode(), `Failed to load fields: ${(error as Error).message}`);
+					throw error;
 				}
 			},
 		},
