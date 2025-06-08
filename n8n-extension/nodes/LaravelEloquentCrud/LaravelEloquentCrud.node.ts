@@ -400,6 +400,7 @@ export class LaravelEloquentCrud implements INodeType {
 			node_id: nodeId,
 			execution_id: executionId,
 			is_n8n_crud: true,
+			source_trigger: (items[0].json as IItemMetadata)?.metadata?.source_trigger,
 		};
 
 		try {

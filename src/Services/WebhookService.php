@@ -181,34 +181,29 @@ class WebhookService
 
         // 1. Check if this event was triggered by n8n CRUD operation
         if (!empty($metadata['is_n8n_crud'])) {
-            // If we have source trigger info, this means we're in a workflow loop
-            if (!empty($metadata['source_trigger'])) {
-                $sourceTrigger = $metadata['source_trigger'];
+            Log::channel(config('n8n-eloquent.logging.channel'))
+                ->info("Event triggered by n8n CRUD operation", [
+                    'model' => $modelClass,
+                    'event' => $event,
+                    'metadata' => $metadata
+                ]);
+            return true;
+        }
+
+        // 2. Check if we have source trigger info
+        if (!empty($metadata['source_trigger'])) {
+            $sourceTrigger = $metadata['source_trigger'];
+            
+            // If this event matches the source trigger, prevent the loop
+            if ($sourceTrigger['model'] === $modelClass && $sourceTrigger['event'] === $event) {
                 Log::channel(config('n8n-eloquent.logging.channel'))
-                    ->warning("Workflow-level loop detected", [
+                    ->warning("Source trigger loop detected", [
                         'model' => $modelClass,
                         'event' => $event,
-                        'workflow_id' => $sourceTrigger['workflow_id'] ?? null,
-                        'node_id' => $sourceTrigger['node_id'] ?? null,
-                        'trigger_model' => $sourceTrigger['model'] ?? null,
-                        'trigger_event' => $sourceTrigger['event'] ?? null,
-                        'trigger_timestamp' => $sourceTrigger['timestamp'] ?? null
+                        'source_trigger' => $sourceTrigger
                     ]);
                 return true;
             }
-        }
-
-        // 2. Check trigger depth
-        $maxTriggerDepth = config('n8n-eloquent.events.loop_prevention.max_trigger_depth', 1);
-        $currentDepth = $metadata['trigger_depth'] ?? 1;
-        
-        if ($currentDepth > $maxTriggerDepth) {
-            Log::channel(config('n8n-eloquent.logging.channel'))
-                ->warning("Maximum trigger depth reached for {$modelClass} {$event} event", [
-                    'trigger_chain' => $metadata['trigger_chain'] ?? [],
-                    'max_depth' => $maxTriggerDepth
-                ]);
-            return true;
         }
 
         // 3. Check same model cooldown
@@ -228,15 +223,23 @@ class WebhookService
         // Set cooldown cache
         Cache::put($cacheKey, true, now()->addMinutes($cooldownMinutes));
 
-        // 4. Check trigger chain for cycles if enabled
+        // 4. Check trigger chain for cycles
         if (config('n8n-eloquent.events.loop_prevention.track_chain', true)) {
             $triggerChain = $metadata['trigger_chain'] ?? [];
+            $currentEvent = [
+                'model' => $modelClass,
+                'event' => $event,
+                'id' => $modelId
+            ];
+            
+            // Check if this exact event combination exists in the chain
             foreach ($triggerChain as $trigger) {
-                if ($trigger['model'] === $modelClass && 
-                    $trigger['id'] === $modelId && 
-                    $trigger['event'] === $event) {
+                if ($trigger['model'] === $currentEvent['model'] && 
+                    $trigger['event'] === $currentEvent['event'] && 
+                    $trigger['id'] === $currentEvent['id']) {
                     Log::channel(config('n8n-eloquent.logging.channel'))
-                        ->warning("Cycle detected in trigger chain for {$modelClass} {$event} event", [
+                        ->warning("Cycle detected in trigger chain", [
+                            'current_event' => $currentEvent,
                             'trigger_chain' => $triggerChain
                         ]);
                     return true;
