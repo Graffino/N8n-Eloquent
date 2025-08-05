@@ -10,7 +10,6 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Str;
 use ReflectionClass;
 use ReflectionParameter;
 
@@ -60,6 +59,13 @@ class JobController extends Controller
                 ], 404);
             }
             
+            // Check if job is configured as available
+            if (!$this->isJobConfigured($jobClass)) {
+                return response()->json([
+                    'error' => "Job class {$jobClass} is not configured as available",
+                ], 403);
+            }
+            
             $metadata = $this->getJobMetadata($jobClass);
             
             return response()->json([
@@ -95,6 +101,13 @@ class JobController extends Controller
                 return response()->json([
                     'error' => "Job class {$jobClass} not found",
                 ], 404);
+            }
+            
+            // Check if job is configured as available
+            if (!$this->isJobConfigured($jobClass)) {
+                return response()->json([
+                    'error' => "Job class {$jobClass} is not configured as available",
+                ], 403);
             }
             
             $parameters = $this->getJobParameters($jobClass);
@@ -133,6 +146,13 @@ class JobController extends Controller
                 return response()->json([
                     'error' => "Job class {$jobClass} not found",
                 ], 404);
+            }
+            
+            // Check if job is configured as available
+            if (!$this->isJobConfigured($jobClass)) {
+                return response()->json([
+                    'error' => "Job class {$jobClass} is not configured as available",
+                ], 403);
             }
             
             $data = $request->all();
@@ -315,120 +335,52 @@ class JobController extends Controller
     }
 
     /**
-     * Discover available jobs in the application.
+     * Get available jobs from configuration.
      *
      * @return array
      */
     protected function discoverJobs()
     {
         $jobs = [];
+        $availableJobs = config('n8n-eloquent.jobs.available', []);
         
-        // Common job directories
-        $jobDirectories = [
-            app_path('Jobs'),
-            app_path('Console/Commands'),
-        ];
-        
-        foreach ($jobDirectories as $directory) {
-            if (!is_dir($directory)) {
+        foreach ($availableJobs as $jobClass) {
+            if (!class_exists($jobClass)) {
+                Log::warning("Configured job class does not exist: {$jobClass}");
                 continue;
             }
             
-            $files = glob($directory . '/*.php');
+            $reflection = new ReflectionClass($jobClass);
             
-            foreach ($files as $file) {
-                $className = 'App\\' . str_replace('/', '\\', str_replace(app_path() . '/', '', str_replace('.php', '', $file)));
-                
-                if (class_exists($className)) {
-                    $reflection = new ReflectionClass($className);
-                    
-                    // Check if it's a job class
-                    if ($this->isJobClass($reflection)) {
-                        $jobs[] = [
-                            'name' => $reflection->getShortName(),
-                            'class' => $className,
-                            'file' => $file,
-                            'namespace' => $reflection->getNamespaceName(),
-                        ];
-                    }
-                }
+            // Check if it's a valid job class
+            if ($this->isJobClass($reflection)) {
+                $jobs[] = [
+                    'name' => $reflection->getShortName(),
+                    'class' => $jobClass,
+                    'file' => $reflection->getFileName(),
+                    'namespace' => $reflection->getNamespaceName(),
+                ];
+            } else {
+                Log::warning("Configured class is not a valid job: {$jobClass}");
             }
         }
-        
-        // Also check for jobs in other namespaces
-        $this->discoverJobsInNamespace($jobs, 'App\\Jobs');
-        $this->discoverJobsInNamespace($jobs, 'App\\Console\\Commands');
         
         return $jobs;
     }
 
     /**
-     * Discover jobs in a specific namespace.
+     * Check if a job is configured as available.
      *
-     * @param  array  $jobs
-     * @param  string  $namespace
-     * @return void
+     * @param  string  $jobClass
+     * @return bool
      */
-    protected function discoverJobsInNamespace(&$jobs, $namespace)
+    protected function isJobConfigured(string $jobClass): bool
     {
-        try {
-            $composerJson = json_decode(file_get_contents(base_path('composer.json')), true);
-            $autoload = $composerJson['autoload']['psr-4'] ?? [];
-            
-            foreach ($autoload as $namespacePrefix => $path) {
-                if (Str::startsWith($namespace, $namespacePrefix)) {
-                    $relativePath = str_replace($namespacePrefix, '', $namespace);
-                    $fullPath = base_path($path . '/' . str_replace('\\', '/', $relativePath));
-                    
-                    if (is_dir($fullPath)) {
-                        $this->scanDirectoryForJobs($jobs, $fullPath, $namespace);
-                    }
-                }
-            }
-        } catch (\Exception $e) {
-            Log::warning('Failed to discover jobs in namespace', [
-                'namespace' => $namespace,
-                'error' => $e->getMessage(),
-            ]);
-        }
+        $availableJobs = config('n8n-eloquent.jobs.available', []);
+        return in_array($jobClass, $availableJobs);
     }
 
-    /**
-     * Scan directory for job classes.
-     *
-     * @param  array  $jobs
-     * @param  string  $directory
-     * @param  string  $namespace
-     * @return void
-     */
-    protected function scanDirectoryForJobs(&$jobs, $directory, $namespace)
-    {
-        $files = glob($directory . '/*.php');
-        
-        foreach ($files as $file) {
-            $className = $namespace . '\\' . basename($file, '.php');
-            
-            if (class_exists($className)) {
-                $reflection = new ReflectionClass($className);
-                
-                if ($this->isJobClass($reflection)) {
-                    $jobs[] = [
-                        'name' => $reflection->getShortName(),
-                        'class' => $className,
-                        'file' => $file,
-                        'namespace' => $reflection->getNamespaceName(),
-                    ];
-                }
-            }
-        }
-        
-        // Scan subdirectories
-        $subdirs = glob($directory . '/*', GLOB_ONLYDIR);
-        foreach ($subdirs as $subdir) {
-            $subNamespace = $namespace . '\\' . basename($subdir);
-            $this->scanDirectoryForJobs($jobs, $subdir, $subNamespace);
-        }
-    }
+
 
     /**
      * Check if a class is a job class.

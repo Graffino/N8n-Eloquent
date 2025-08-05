@@ -4,7 +4,7 @@ The Laravel Job Dispatcher Node allows you to dispatch Laravel jobs from your n8
 
 ## Features
 
-- **Job Discovery**: Automatically discovers all available jobs in your Laravel application
+- **Configurable Job Discovery**: Only jobs explicitly configured in the n8n-eloquent config are available
 - **Parameter Configuration**: Dynamically loads job parameters and provides a form to configure them
 - **Queue Management**: Specify which queue to dispatch jobs to
 - **Scheduling**: Dispatch jobs with delays for future execution
@@ -29,17 +29,25 @@ Dispatches a job to run immediately (synchronously).
 ### Job Selection
 
 - **Job**: Select from the list of available jobs in your Laravel application
-- The node automatically discovers jobs from:
-  - `App\Jobs` namespace
-  - `App\Console\Commands` namespace
-  - Any class implementing `ShouldQueue` interface
-  - Any class extending `Illuminate\Console\Command`
+- Only jobs explicitly configured in the `n8n-eloquent.php` config file are available
+- To make a job available, add it to the `jobs.available` array in your config:
+
+```php
+'jobs' => [
+    'available' => [
+        'App\\Jobs\\SendEmailJob',
+        'App\\Jobs\\ProcessDataJob',
+        'App\\Console\\Commands\\CustomCommand',
+    ],
+],
+```
 
 ### Job Parameters
 
 - **Parameter Name**: Select from the available parameters for the chosen job
 - **Parameter Value**: Enter the value for the selected parameter
 - Parameters are automatically discovered from the job's constructor
+- All parameter types and requirements are dynamically loaded
 
 ### Queue Configuration
 
@@ -130,6 +138,25 @@ POST /api/n8n/jobs/{job}/dispatch
   "afterCommit": true
 }
 ```
+
+## Configuration
+
+### Setting Up Available Jobs
+
+Before you can dispatch jobs through n8n, you need to configure which jobs are available. Edit your `config/n8n-eloquent.php` file and add the jobs you want to make available:
+
+```php
+'jobs' => [
+    'available' => [
+        'App\\Jobs\\SendEmailJob',
+        'App\\Jobs\\ProcessDataJob',
+        'App\\Console\\Commands\\CustomCommand',
+        // Add more job classes here
+    ],
+],
+```
+
+**Important**: Only jobs listed in this array will be discoverable and dispatchable through the n8n API. This provides security by preventing unauthorized access to all jobs in your application.
 
 ## Creating Jobs for n8n
 
@@ -227,7 +254,8 @@ The node provides comprehensive error handling:
 
 - Ensure the job class exists and is autoloaded
 - Check that the job implements `ShouldQueue` or extends `Command`
-- Verify the job is in a discoverable namespace
+- **Add the job to the `jobs.available` array in your `n8n-eloquent.php` config file**
+- Verify the job class can be instantiated
 
 ### Parameter Loading Issues
 

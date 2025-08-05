@@ -17,6 +17,7 @@
 ## 🌟 Features
 
 ### Current Features
+
 - 🔄 **Model Event Integration**
   - Automatic webhook registration for Eloquent models
   - Real-time model event broadcasting to n8n
@@ -36,25 +37,34 @@
   - Postman collection for API testing
 
 ### Available Nodes
+
 1. **Laravel Eloquent Trigger Node**
    - Watch for model events (create, update, delete)
    - Filter by specific model properties
    - Configure security settings
-   
+
 2. **Laravel Eloquent CRUD Node**
    - Create, read, update, and delete model records
    - Batch operations support
    - Dynamic field mapping
    - Relationship handling
 
+3. **Laravel Job Dispatcher Node** ⭐ **NEW**
+   - Dispatch Laravel jobs from n8n workflows
+   - Configurable job discovery (security-first approach)
+   - Automatic parameter discovery
+   - Queue management and scheduling
+
 ## 📦 Installation
 
 1. Install via composer:
+
 ```bash
 composer require shortinc/n8n-eloquent
 ```
 
 2. Install n8n nodes:
+
 ```bash
 cd n8n-extension
 npm install
@@ -62,6 +72,7 @@ npm run build
 ```
 
 3. Configure your `.env`:
+
 ```env
 N8N_WEBHOOK_URL=https://your-n8n-instance.com/webhook/path
 N8N_WEBHOOK_SECRET=your-secret-key
@@ -70,6 +81,7 @@ N8N_WEBHOOK_SECRET=your-secret-key
 ## 🚀 Quick Start
 
 1. Add the `HasWebhooks` trait to your model:
+
 ```php
 use Shortinc\N8nEloquent\Traits\HasWebhooks;
 
@@ -92,9 +104,31 @@ class User extends Model
    - Activate the workflow
 
 3. Test the integration:
+
 ```php
 User::create(['name' => 'Test User']); // Will trigger n8n workflow
 ```
+
+### Job Dispatcher Quick Start
+
+1. Configure available jobs in `config/n8n-eloquent.php`:
+
+```php
+'jobs' => [
+    'available' => [
+        'App\\Jobs\\SendEmailJob',
+        'App\\Jobs\\ProcessDataJob',
+    ],
+],
+```
+
+2. Create a workflow in n8n:
+   - Add the "Laravel Job Dispatcher" node
+   - Select from your configured jobs
+   - Set parameters and queue options
+   - Activate the workflow
+
+3. Dispatch jobs from n8n workflows with full parameter validation and queue management.
 
 ## 📚 Documentation
 
@@ -108,39 +142,42 @@ User::create(['name' => 'Test User']); // Will trigger n8n workflow
 ## 🗺️ Roadmap
 
 ### Coming Soon (Q3 2025)
+
 1. **Laravel Event Dispatcher Node**
    - Dispatch any Laravel event
    - Support for broadcasting
    - Event payload builder
-   
+
 2. **Laravel Event Listener Node**
    - Listen for Laravel events
    - Event filtering and routing
    - Error recovery
-   
-3. **Laravel Job Dispatcher Node**
+
+3. **Laravel Job Dispatcher Node** ✅ **Available**
    - Dispatch Laravel jobs
    - Job scheduling and delays
    - Queue driver selection
    - Job status monitoring
 
 ### Future Plans (Q4 2025)
+
 1. **Laravel Cache Node**
    - Cache operations
    - Multiple store support
    - Atomic operations
-   
+
 2. **Laravel Queue Node**
    - Queue management
    - Worker control
    - Failed job handling
-   
+
 3. **Laravel Notification Node**
    - Send Laravel notifications
    - Multiple channel support
    - Template system
 
 ### Under Consideration
+
 - Laravel Broadcasting Node
 - Laravel File Storage Node
 - Laravel Mail Node
@@ -160,4 +197,4 @@ The MIT License (MIT). Please see [License File](LICENSE) for more information.
 <div align="center">
 Built with ❤️ by Short Inc.<br>
 Powered by n8n & Laravel
-</div> 
+</div>
