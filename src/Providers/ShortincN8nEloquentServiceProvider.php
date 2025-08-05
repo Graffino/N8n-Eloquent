@@ -15,6 +15,7 @@ use Shortinc\N8nEloquent\Events\ModelLifecycleEvent;
 use Shortinc\N8nEloquent\Events\ModelPropertyEvent;
 use Shortinc\N8nEloquent\Listeners\ModelLifecycleListener;
 use Shortinc\N8nEloquent\Listeners\ModelPropertyListener;
+use Shortinc\N8nEloquent\Observers\ModelObserver;
 use Shortinc\N8nEloquent\Services\ModelDiscoveryService;
 use Shortinc\N8nEloquent\Services\WebhookService;
 use Shortinc\N8nEloquent\Services\SubscriptionRecoveryService;
@@ -108,12 +109,8 @@ class ShortincN8nEloquentServiceProvider extends ServiceProvider
             // Get events for this specific model, fallback to default events
             $events = $modelConfig['events'] ?? $defaultEvents;
             
-            // Register the events for this model
-            foreach ($events as $event) {
-                $modelClass::$event(function ($model) use ($event) {
-                    event(new ModelLifecycleEvent($model, $event));
-                });
-            }
+            // Register the ModelObserver for this model
+            $modelClass::observe(\Shortinc\N8nEloquent\Observers\ModelObserver::class);
             
             // If property events are enabled, register those too
             if (config('n8n-eloquent.events.property_events.enabled', true)) {

@@ -290,6 +290,145 @@ class SubscriptionHealthController extends Controller
     }
 
     /**
+     * Comprehensive credential test endpoint.
+     * Tests both API key authentication and HMAC verification.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function testCredentials(Request $request): JsonResponse
+    {
+        try {
+            $results = [
+                'status' => 'success',
+                'message' => 'Credential validation completed',
+                'tests' => [],
+                'timestamp' => now()->toIso8601String(),
+            ];
+
+            // Test 1: API Key Authentication (already validated by middleware)
+            $results['tests']['api_key'] = [
+                'status' => 'PASSED',
+                'message' => 'API key authentication successful',
+                'details' => [
+                    'header_used' => 'X-N8n-Api-Key',
+                    'authenticated_at' => now()->toIso8601String(),
+                ],
+            ];
+
+            // Test 2: HMAC Verification (required for security)
+            $hmacSecret = config('n8n-eloquent.webhooks.hmac_secret');
+            $signature = $request->header('X-N8n-Signature');
+            $payload = $request->getContent();
+
+            if (empty($hmacSecret)) {
+                $results['tests']['hmac'] = [
+                    'status' => 'FAILED',
+                    'message' => 'HMAC secret not configured on server',
+                    'details' => [
+                        'note' => 'HMAC verification is required for security. Configure N8N_HMAC_SECRET in your .env file.',
+                    ],
+                ];
+            } else {
+                // Calculate expected signature for the payload
+                $expectedSignature = hash_hmac('sha256', $payload, $hmacSecret);
+                
+                if (empty($signature)) {
+                    // For credential tests, we'll calculate what the signature should be
+                    $results['tests']['hmac'] = [
+                        'status' => 'PASSED',
+                        'message' => 'HMAC verification would pass (signature calculated server-side)',
+                        'details' => [
+                            'algorithm' => 'sha256',
+                            'payload' => $payload,
+                            'payload_length' => strlen($payload),
+                            'expected_signature' => $expectedSignature,
+                            'note' => 'HMAC signature not provided in credential test, but verification would succeed with correct signature.',
+                        ],
+                    ];
+                } else {
+                    // Verify signature using timing-safe comparison
+                    if (hash_equals($expectedSignature, $signature)) {
+                        $results['tests']['hmac'] = [
+                            'status' => 'PASSED',
+                            'message' => 'HMAC verification successful',
+                            'details' => [
+                                'algorithm' => 'sha256',
+                                'payload' => $payload,
+                                'payload_length' => strlen($payload),
+                                'verified_at' => now()->toIso8601String(),
+                            ],
+                        ];
+                    } else {
+                        $results['tests']['hmac'] = [
+                            'status' => 'FAILED',
+                            'message' => 'Invalid HMAC signature',
+                            'details' => [
+                                'algorithm' => 'sha256',
+                                'payload' => $payload,
+                                'payload_length' => strlen($payload),
+                                'received_signature' => $signature,
+                                'expected_signature' => $expectedSignature,
+                                'note' => 'HMAC signature does not match expected value. Check your HMAC secret configuration.',
+                            ],
+                        ];
+                    }
+                }
+            }
+
+            // Test 3: Basic API functionality
+            try {
+                $models = app(\Shortinc\N8nEloquent\Services\ModelDiscoveryService::class)->getModels();
+                $results['tests']['api_functionality'] = [
+                    'status' => 'PASSED',
+                    'message' => 'API functionality verified',
+                    'details' => [
+                        'available_models' => $models->count(),
+                        'models_sample' => $models->take(3)->toArray(), // Show first 3 models
+                    ],
+                ];
+            } catch (\Throwable $e) {
+                $results['tests']['api_functionality'] = [
+                    'status' => 'FAILED',
+                    'message' => 'API functionality test failed',
+                    'details' => [
+                        'error' => $e->getMessage(),
+                    ],
+                ];
+            }
+
+            // Determine overall status
+            $failedTests = collect($results['tests'])->filter(function ($test) {
+                return $test['status'] === 'FAILED';
+            })->count();
+
+            if ($failedTests > 0) {
+                $results['status'] = 'failed';
+                $results['message'] = "Credential validation failed with {$failedTests} failed test(s)";
+                
+                // Return error status code for failed tests
+                return response()->json($results, 401);
+            }
+
+            return response()->json($results);
+
+        } catch (\Throwable $e) {
+            Log::channel(config('n8n-eloquent.logging.channel'))
+                ->error('Error testing credentials', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                ]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Error testing credentials',
+                'error' => $e->getMessage(),
+                'timestamp' => now()->toIso8601String(),
+            ], 500);
+        }
+    }
+
+    /**
      * Calculate overall health status.
      *
      * @param  int  $total

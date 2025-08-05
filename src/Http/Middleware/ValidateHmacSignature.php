@@ -17,14 +17,14 @@ class ValidateHmacSignature
      */
     public function handle(Request $request, Closure $next)
     {
-        $apiSecret = config('n8n-eloquent.api.secret');
+        $hmacSecret = config('n8n-eloquent.webhooks.hmac_secret');
         
-        if (empty($apiSecret)) {
+        if (empty($hmacSecret)) {
             Log::channel(config('n8n-eloquent.logging.channel'))
-                ->error('HMAC signature validation failed: API secret not configured.');
+                ->error('HMAC signature validation failed: HMAC secret not configured.');
             
             return response()->json([
-                'error' => 'API secret not configured. Please set N8N_ELOQUENT_API_SECRET in your .env file.'
+                'error' => 'HMAC secret not configured. Please set N8N_HMAC_SECRET in your .env file.'
             ], 500);
         }
         
@@ -44,7 +44,7 @@ class ValidateHmacSignature
         $payload = $request->getContent();
         
         // Calculate expected signature
-        $expectedSignature = hash_hmac('sha256', $payload, $apiSecret);
+        $expectedSignature = hash_hmac('sha256', $payload, $hmacSecret);
         
         // Verify signature
         if (!hash_equals($expectedSignature, $signature)) {

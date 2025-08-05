@@ -30,41 +30,62 @@ class WebhookService
      * @param  array  $events
      * @param  string  $webhookUrl
      * @param  array  $properties
+     * @param  array  $metadata
      * @return array
      */
     public function subscribe(
         string $modelClass,
         array $events,
         string $webhookUrl,
-        array $properties = []
+        array $properties = [],
+        array $metadata = []
     ): array {
-        // Get existing subscriptions for this model and node
-        $existingSubscriptions = WebhookSubscription::where('model_class', $modelClass)
-            ->where('webhook_url', 'LIKE', '%' . parse_url($webhookUrl, PHP_URL_HOST) . '%')
-            ->orderBy('created_at', 'desc')
-            ->get();
+        // Check if a subscription already exists for this exact webhook URL
+        $existingSubscription = WebhookSubscription::where('webhook_url', $webhookUrl)
+            ->where('model_class', $modelClass)
+            ->first();
 
-        // If we have more than 2 subscriptions (test and production), delete the older ones
-        if ($existingSubscriptions->count() > 2) {
-            $toKeep = $existingSubscriptions->take(2); // Keep the 2 most recent ones
-            $toDelete = $existingSubscriptions->slice(2);
-            
-            foreach ($toDelete as $subscription) {
-                $subscription->delete();
-                Log::channel(config('n8n-eloquent.logging.channel'))
-                    ->info("Deleted old webhook subscription for model {$modelClass}", [
-                        'subscription_id' => $subscription->id,
-                        'webhook_url' => $subscription->webhook_url,
-                    ]);
-            }
+        if ($existingSubscription) {
+            // Update the existing subscription
+            $existingSubscription->update([
+                'events' => $events,
+                'properties' => $properties,
+                'node_id' => $metadata['node_id'] ?? null,
+                'workflow_id' => $metadata['workflow_id'] ?? null,
+                'verify_hmac' => $metadata['verify_hmac'] ?? true,
+                'require_timestamp' => $metadata['require_timestamp'] ?? true,
+                'expected_source_ip' => $metadata['expected_source_ip'] ?? null,
+                'active' => true,
+                'last_error' => null, // Clear any previous errors
+            ]);
+
+            // Clear cache to force refresh
+            $this->clearSubscriptionsCache();
+
+            Log::channel(config('n8n-eloquent.logging.channel'))
+                ->info("Updated existing webhook subscription for model {$modelClass}", [
+                    'subscription_id' => $existingSubscription->id,
+                    'events' => $events,
+                    'webhook_url' => $webhookUrl,
+                ]);
+
+            return [
+                'message' => 'Webhook subscription updated successfully',
+                'subscription' => $existingSubscription->fresh()->toLegacyArray(),
+            ];
         }
 
-        // Create the new subscription
+        // Create a new subscription if none exists
         $subscription = WebhookSubscription::create([
             'model_class' => $modelClass,
             'events' => $events,
             'webhook_url' => $webhookUrl,
             'properties' => $properties,
+            'node_id' => $metadata['node_id'] ?? null,
+            'workflow_id' => $metadata['workflow_id'] ?? null,
+            'verify_hmac' => $metadata['verify_hmac'] ?? true,
+            'require_timestamp' => $metadata['require_timestamp'] ?? true,
+            'expected_source_ip' => $metadata['expected_source_ip'] ?? null,
             'active' => true,
         ]);
 
@@ -72,7 +93,7 @@ class WebhookService
         $this->clearSubscriptionsCache();
 
         Log::channel(config('n8n-eloquent.logging.channel'))
-            ->info("Created webhook subscription for model {$modelClass}", [
+            ->info("Created new webhook subscription for model {$modelClass}", [
                 'subscription_id' => $subscription->id,
                 'events' => $events,
                 'webhook_url' => $webhookUrl,
@@ -163,92 +184,7 @@ class WebhookService
         $this->clearSubscriptionsCache();
     }
 
-    /**
-     * Check if the current event is part of an infinite loop.
-     *
-     * @param  string  $modelClass
-     * @param  string  $event
-     * @param  mixed  $model
-     * @param  array  $metadata
-     * @return bool
-     */
-    protected function isInfiniteLoop(string $modelClass, string $event, $model, array $metadata): bool
-    {
-        // Check if loop prevention is enabled
-        if (!config('n8n-eloquent.events.loop_prevention.enabled', true)) {
-            return false;
-        }
 
-        // 1. Check if this event was triggered by n8n CRUD operation
-        if (!empty($metadata['is_n8n_crud'])) {
-            Log::channel(config('n8n-eloquent.logging.channel'))
-                ->info("Event triggered by n8n CRUD operation", [
-                    'model' => $modelClass,
-                    'event' => $event,
-                    'metadata' => $metadata
-                ]);
-            return true;
-        }
-
-        // 2. Check if we have source trigger info
-        if (!empty($metadata['source_trigger'])) {
-            $sourceTrigger = $metadata['source_trigger'];
-            
-            // If this event matches the source trigger, prevent the loop
-            if ($sourceTrigger['model'] === $modelClass && $sourceTrigger['event'] === $event) {
-                Log::channel(config('n8n-eloquent.logging.channel'))
-                    ->warning("Source trigger loop detected", [
-                        'model' => $modelClass,
-                        'event' => $event,
-                        'source_trigger' => $sourceTrigger
-                    ]);
-                return true;
-            }
-        }
-
-        // 3. Check same model cooldown
-        $cooldownMinutes = (int) config('n8n-eloquent.events.loop_prevention.same_model_cooldown', 1);
-        $modelId = $model->getKey();
-        $cacheKey = "n8n_webhook:{$modelClass}:{$modelId}:{$event}";
-        
-        if (Cache::has($cacheKey)) {
-            Log::channel(config('n8n-eloquent.logging.channel'))
-                ->warning("Cooldown period active for {$modelClass} {$event} event", [
-                    'model_id' => $modelId,
-                    'cooldown_minutes' => $cooldownMinutes
-                ]);
-            return true;
-        }
-        
-        // Set cooldown cache
-        Cache::put($cacheKey, true, now()->addMinutes($cooldownMinutes));
-
-        // 4. Check trigger chain for cycles
-        if (config('n8n-eloquent.events.loop_prevention.track_chain', true)) {
-            $triggerChain = $metadata['trigger_chain'] ?? [];
-            $currentEvent = [
-                'model' => $modelClass,
-                'event' => $event,
-                'id' => $modelId
-            ];
-            
-            // Check if this exact event combination exists in the chain
-            foreach ($triggerChain as $trigger) {
-                if ($trigger['model'] === $currentEvent['model'] && 
-                    $trigger['event'] === $currentEvent['event'] && 
-                    $trigger['id'] === $currentEvent['id']) {
-                    Log::channel(config('n8n-eloquent.logging.channel'))
-                        ->warning("Cycle detected in trigger chain", [
-                            'current_event' => $currentEvent,
-                            'trigger_chain' => $triggerChain
-                        ]);
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
 
     /**
      * Trigger a webhook for a model event.
@@ -282,21 +218,15 @@ class WebhookService
             $metadata['source_trigger'] = $sourceTrigger;
         }
 
-        $metadata['trigger_chain'] = $metadata['trigger_chain'] ?? [];
-        $metadata['trigger_depth'] = ($metadata['trigger_depth'] ?? 0) + 1;
-
-        // Check for infinite loop
-        if ($this->isInfiniteLoop($modelClass, $event, $model, $metadata)) {
-            return;
-        }
-
-        // Add current event to trigger chain
-        $metadata['trigger_chain'][] = [
-            'event' => $event,
-            'model' => $modelClass,
-            'id' => $model->getKey(),
-            'depth' => $metadata['trigger_depth']
-        ];
+        // Debug: Log the metadata being processed
+        Log::channel(config('n8n-eloquent.logging.channel'))
+            ->info('WebhookService processing event', [
+                'model' => $modelClass,
+                'event' => $event,
+                'metadata' => $metadata,
+                'has_is_n8n_crud' => !empty($metadata['is_n8n_crud']),
+                'has_source_trigger' => !empty($metadata['source_trigger']),
+            ]);
 
         // Prepare the payload
         $payload = array_merge([
@@ -330,14 +260,15 @@ class WebhookService
         try {
             $client = new \GuzzleHttp\Client();
             
-            $apiSecret = config('n8n-eloquent.api.secret');
+            $hmacSecret = config('n8n-eloquent.webhooks.hmac_secret');
             
-            // Calculate HMAC signature
-            $signature = hash_hmac('sha256', json_encode($payload), $apiSecret);
+            // Calculate HMAC signature using the JSON-encoded payload
+            $jsonPayload = json_encode($payload);
+            $signature = hash_hmac('sha256', $jsonPayload, $hmacSecret);
             
-            // Send the request
+            // Send the request with the raw JSON string to match the HMAC calculation
             $response = $client->post($url, [
-                'json' => $payload,
+                'body' => $jsonPayload,
                 'headers' => [
                     'Content-Type' => 'application/json',
                     'X-N8n-Signature' => $signature,

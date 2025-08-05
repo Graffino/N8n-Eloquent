@@ -38,8 +38,8 @@ export class LaravelEloquentApi implements ICredentialType {
 				password: true,
 			},
 			default: '',
-			description: 'The HMAC secret for webhook signature verification (optional)',
-			required: false,
+			description: 'The HMAC secret for webhook signature verification (required for security)',
+			required: true,
 		},
 	];
 
@@ -51,19 +51,23 @@ export class LaravelEloquentApi implements ICredentialType {
 				'Content-Type': 'application/json',
 				'Accept': 'application/json',
 			},
+			skipSslCertificateValidation: true,
 		},
 	};
 
 	test: ICredentialTestRequest = {
 		request: {
 			baseURL: '={{$credentials.baseUrl}}',
-			url: '/api/n8n/models',
-			method: 'GET',
+			url: '/api/n8n/test-credentials',
+			method: 'POST',
 			headers: {
 				'X-N8n-Api-Key': '={{$credentials.apiKey}}',
 				'Content-Type': 'application/json',
 				'Accept': 'application/json',
+				'X-N8n-Signature': '={{hash_hmac("sha256", "test", $credentials.hmacSecret)}}',
 			},
+			body: 'test',
+			skipSslCertificateValidation: true,
 		},
 	};
 } 

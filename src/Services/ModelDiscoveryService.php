@@ -194,33 +194,49 @@ class ModelDiscoveryService
     {
         // Check if the model is discoverable
         if (!$this->getModels()->contains($modelClass)) {
+            Log::channel(config('n8n-eloquent.logging.channel'))
+                ->debug("Model {$modelClass} not found in discovered models");
             return null;
         }
 
         try {
+            Log::channel(config('n8n-eloquent.logging.channel'))
+                ->debug("Getting properties for model {$modelClass}");
+            
             // Get an instance of the model
             $model = App::make($modelClass);
+            Log::channel(config('n8n-eloquent.logging.channel'))
+                ->debug("Model instance created successfully");
             
             // Get table information using Laravel's Schema facade
             $table = $model->getTable();
             $connection = $model->getConnection();
+            Log::channel(config('n8n-eloquent.logging.channel'))
+                ->debug("Table: {$table}, Connection: {$connection->getName()}");
             
             // Get column information using Laravel's Schema
             $columns = Schema::connection($connection->getName())->getColumnListing($table);
-            $columnTypes = Schema::connection($connection->getName())->getColumns($table);
+            Log::channel(config('n8n-eloquent.logging.channel'))
+                ->debug("Columns found: " . count($columns));
+            
+            // Get column details using Doctrine DBAL
+            $doctrineSchemaManager = $connection->getDoctrineSchemaManager();
+            $tableDetails = $doctrineSchemaManager->listTableDetails($table);
             
             $properties = [];
             foreach ($columns as $columnName) {
-                // Find the column details
-                $columnDetails = collect($columnTypes)->firstWhere('name', $columnName);
+                // Get column details from Doctrine
+                $columnDetails = $tableDetails->getColumn($columnName);
                 
                 if (!$columnDetails) {
+                    Log::channel(config('n8n-eloquent.logging.channel'))
+                        ->warning("Column details not found for {$columnName}");
                     continue;
                 }
                 
-                $type = $columnDetails['type_name'] ?? 'string';
-                $nullable = $columnDetails['nullable'] ?? false;
-                $default = $columnDetails['default'] ?? null;
+                $type = $columnDetails->getType()->getName();
+                $nullable = !$columnDetails->getNotnull();
+                $default = $columnDetails->getDefault();
                 
                 $properties[$columnName] = [
                     'name' => $columnName,
@@ -231,6 +247,9 @@ class ModelDiscoveryService
                     'primary' => $columnName === $model->getKeyName(),
                 ];
             }
+            
+            Log::channel(config('n8n-eloquent.logging.channel'))
+                ->debug("Properties built successfully: " . count($properties));
             
             return $properties;
         } catch (\Throwable $e) {

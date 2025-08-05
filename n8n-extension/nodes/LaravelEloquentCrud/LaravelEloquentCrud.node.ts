@@ -15,7 +15,7 @@ import {
 interface IMetadata extends IDataObject {
 	source_trigger?: {
 		node_id: string;
-		workflow_id: string;
+		workflow_id: string | undefined;
 		model: string;
 		event: string;
 		timestamp: string;
@@ -331,6 +331,7 @@ export class LaravelEloquentCrud implements INodeType {
 						method: 'GET',
 						url: `${baseUrl}/api/n8n/models`,
 						json: true,
+						skipSslCertificateValidation: true,
 					});
 
 					console.log('✅ Models response:', response);
@@ -364,8 +365,8 @@ export class LaravelEloquentCrud implements INodeType {
 					console.log('🔑 Using credentials with baseUrl:', baseUrl);
 					console.log('🌐 Making request to get fields for model:', model);
 					
-					// Encode the model name properly for the URL, replacing backslashes with forward slashes
-					const encodedModel = model.replace(/\\/g, '/');
+					// Encode the model name properly for the URL
+					const encodedModel = encodeURIComponent(model);
 					const url = `${baseUrl}/api/n8n/models/${encodedModel}/fields`;
 					console.log('🔗 Request URL:', url);
 
@@ -374,6 +375,7 @@ export class LaravelEloquentCrud implements INodeType {
 							method: 'GET',
 							url,
 							json: true,
+							skipSslCertificateValidation: true,
 						});
 
 						console.log('✅ Fields response:', response);
@@ -438,6 +440,9 @@ export class LaravelEloquentCrud implements INodeType {
 			is_n8n_crud: true,
 			source_trigger: (items[0].json as IItemMetadata)?.metadata?.source_trigger,
 		};
+		
+		console.log('🔧 CRUD Node - Extracted source_trigger:', (items[0].json as IItemMetadata)?.metadata?.source_trigger);
+		console.log('🔧 CRUD Node - Final metadata:', metadata);
 
 		try {
 			let responseData: IDataObject | IDataObject[] = [];
@@ -456,12 +461,15 @@ export class LaravelEloquentCrud implements INodeType {
 
 					// Add metadata to the request
 					data.metadata = metadata;
+					
+					console.log('🔧 CRUD Node - Sending metadata for create:', metadata);
 
 					const options: IHttpRequestOptions = {
 						method: 'POST' as IHttpRequestMethods,
 						url: modelApiUrl,
 						body: data,
 						json: true,
+						skipSslCertificateValidation: true,
 					};
 
 					responseData = await this.helpers.httpRequestWithAuthentication.call(this, 'laravelEloquentApi', options);
@@ -480,6 +488,7 @@ export class LaravelEloquentCrud implements INodeType {
 							offset,
 						},
 						json: true,
+						skipSslCertificateValidation: true,
 					};
 
 					responseData = await this.helpers.httpRequestWithAuthentication.call(this, 'laravelEloquentApi', options);
@@ -493,6 +502,7 @@ export class LaravelEloquentCrud implements INodeType {
 						method: 'GET' as IHttpRequestMethods,
 						url: `${modelApiUrl}/${recordId}`,
 						json: true,
+						skipSslCertificateValidation: true,
 					};
 
 					responseData = await this.helpers.httpRequestWithAuthentication.call(this, 'laravelEloquentApi', options);
@@ -510,12 +520,15 @@ export class LaravelEloquentCrud implements INodeType {
 
 					// Add metadata to the request
 					data.metadata = metadata;
+					
+					console.log('🔧 CRUD Node - Sending metadata for update:', metadata);
 
 					const options: IHttpRequestOptions = {
 						method: 'PUT' as IHttpRequestMethods,
 						url: `${modelApiUrl}/${recordId}`,
 						body: data,
 						json: true,
+						skipSslCertificateValidation: true,
 					};
 
 					responseData = await this.helpers.httpRequestWithAuthentication.call(this, 'laravelEloquentApi', options);
@@ -529,6 +542,7 @@ export class LaravelEloquentCrud implements INodeType {
 						method: 'DELETE' as IHttpRequestMethods,
 						url: `${modelApiUrl}/${recordId}`,
 						json: true,
+						skipSslCertificateValidation: true,
 					};
 
 					responseData = await this.helpers.httpRequestWithAuthentication.call(this, 'laravelEloquentApi', options);

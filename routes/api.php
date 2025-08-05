@@ -47,4 +47,5 @@ Route::prefix($prefix)->middleware(array_merge($middleware, [AuthenticateN8n::cl
     Route::get('/health/detailed', [SubscriptionHealthController::class, 'detailedHealth']);
     Route::get('/health/analytics', [SubscriptionHealthController::class, 'analytics']);
     Route::get('/health/validate/{subscription}', [SubscriptionHealthController::class, 'validateSubscription']);
+    Route::post('/test-credentials', [SubscriptionHealthController::class, 'testCredentials']);
 }); 

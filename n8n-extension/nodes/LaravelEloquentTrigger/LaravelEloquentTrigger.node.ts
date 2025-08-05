@@ -27,17 +27,15 @@ interface INodeParameters {
 interface IMetadata extends IDataObject {
 	source_trigger?: {
 		node_id: string;
-		workflow_id: string;
+		workflow_id: string | undefined;
 		model: string;
 		event: string;
 		timestamp: string;
 	} | undefined;
-}
-
-interface IItemMetadata {
-	metadata?: {
-		source_trigger?: IMetadata['source_trigger'];
-	};
+	workflow_id?: string;
+	node_id?: string;
+	execution_id?: string;
+	is_n8n_crud?: boolean;
 }
 
 export class LaravelEloquentTrigger implements INodeType {
@@ -165,6 +163,7 @@ export class LaravelEloquentTrigger implements INodeType {
 						method: 'GET',
 						url: `${baseUrl}/api/n8n/models`,
 						json: true,
+						skipSslCertificateValidation: true,
 					});
 
 					console.log('✅ Models response:', response);
@@ -258,9 +257,18 @@ export class LaravelEloquentTrigger implements INodeType {
 						url: `${baseUrl}/api/n8n/webhooks/subscribe`,
 						body: requestBody,
 						json: true,
+						skipSslCertificateValidation: true,
 					});
 					
 					console.log('✅ Webhook registration successful:', response);
+					
+					// Store the subscription ID for later deletion
+					if (response.subscription && response.subscription.id) {
+						const webhookData = this.getWorkflowStaticData('node');
+						webhookData.subscriptionId = response.subscription.id;
+						console.log('💾 Stored subscription ID:', response.subscription.id);
+					}
+					
 					return true;
 				} catch (error) {
 					console.error('❌ Webhook registration failed:', error);
@@ -300,6 +308,7 @@ export class LaravelEloquentTrigger implements INodeType {
 							subscription_id: webhookData.subscriptionId,
 						},
 						json: true,
+						skipSslCertificateValidation: true,
 					});
 					
 					// Clear the subscription ID
@@ -317,17 +326,178 @@ export class LaravelEloquentTrigger implements INodeType {
 	};
 
 	async webhook(this: IWebhookFunctions): Promise<IWebhookResponseData> {
+		console.log('🔔 webhook() called - Processing incoming webhook data');
+		
 		try {
-			// We'll implement webhook validation in a future update
+			const body = this.getBodyData() as IDataObject;
+			const headers = this.getHeaderData() as IDataObject;
+			
+			// Get the raw request body for HMAC verification
+			const rawBody = typeof this.getRequestObject().body === 'string' 
+				? this.getRequestObject().body 
+				: JSON.stringify(this.getRequestObject().body);
+			
+			console.log('📦 Received webhook body:', body);
+			console.log('📋 Received webhook headers:', headers);
+			console.log('📄 Raw body type:', typeof this.getRequestObject().body);
+			console.log('📄 Raw body for HMAC verification:', rawBody);
+			
+			// Get stored node parameters
+			const webhookData = this.getWorkflowStaticData('node');
+			const nodeParameters = webhookData.nodeParameters as INodeParameters;
+			
+			if (!nodeParameters) {
+				console.error('❌ No node parameters found in webhook data');
+				throw new NodeOperationError(this.getNode(), 'No node parameters found for webhook processing');
+			}
+			
+			// Validate HMAC signature if enabled
+			if (nodeParameters.verifyHmac) {
+				const signature = headers['x-n8n-signature'] as string;
+				const credentials = await this.getCredentials('laravelEloquentApi');
+				const hmacSecret = credentials.hmacSecret as string;
+				
+				if (!signature || !hmacSecret) {
+					console.error('❌ Missing HMAC signature or HMAC secret');
+					throw new NodeOperationError(this.getNode(), 'Missing HMAC signature or HMAC secret for verification');
+				}
+				
+				// Calculate expected signature using the raw body (same as Laravel)
+				const expectedSignature = createHmac('sha256', hmacSecret)
+					.update(rawBody)
+					.digest('hex');
+				
+				// Use timing-safe comparison
+				if (!timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature))) {
+					console.error('❌ HMAC signature verification failed');
+					console.error('Expected signature:', expectedSignature);
+					console.error('Received signature:', signature);
+					console.error('Raw body used for verification:', rawBody);
+					throw new NodeOperationError(this.getNode(), 'HMAC signature verification failed');
+				}
+				
+				console.log('✅ HMAC signature verified successfully');
+			}
+			
+			// Validate timestamp if required
+			if (nodeParameters.requireTimestamp) {
+				const timestamp = body.timestamp as string;
+				if (!timestamp) {
+					console.error('❌ Missing timestamp in webhook payload');
+					throw new NodeOperationError(this.getNode(), 'Missing timestamp in webhook payload');
+				}
+				
+				const webhookTime = new Date(timestamp).getTime();
+				const currentTime = Date.now();
+				const timeDiff = Math.abs(currentTime - webhookTime);
+				const maxAge = 5 * 60 * 1000; // 5 minutes
+				
+				if (timeDiff > maxAge) {
+					console.error('❌ Webhook timestamp too old:', { webhookTime, currentTime, timeDiff });
+					throw new NodeOperationError(this.getNode(), 'Webhook timestamp too old (replay attack protection)');
+				}
+				
+				console.log('✅ Timestamp validation passed');
+			}
+			
+			// Validate source IP if specified
+			if (nodeParameters.expectedSourceIp) {
+				const sourceIp = headers['x-forwarded-for'] as string || 
+								headers['x-real-ip'] as string || 
+								headers['cf-connecting-ip'] as string ||
+								headers['x-client-ip'] as string;
+				
+				if (!sourceIp) {
+					console.error('❌ Could not determine source IP');
+					throw new NodeOperationError(this.getNode(), 'Could not determine source IP for validation');
+				}
+				
+				// Simple IP validation (you might want to use a proper CIDR library)
+				let isIpAllowed = false;
+				if (!nodeParameters.expectedSourceIp.includes('/')) {
+					// Single IP comparison
+					isIpAllowed = sourceIp === nodeParameters.expectedSourceIp;
+				} else {
+					// For CIDR ranges, this is a simplified check
+					// In production, you should use a proper CIDR library
+					const [rangeIp, bits] = nodeParameters.expectedSourceIp.split('/');
+					const mask = parseInt(bits);
+					
+					// Convert IPs to integers for comparison
+					const ipToNumber = (ip: string) => ip.split('.').reduce((acc, octet) => (acc << 8) + parseInt(octet), 0) >>> 0;
+					const ipNum = ipToNumber(sourceIp);
+					const rangeNum = ipToNumber(rangeIp);
+					const maskNum = (0xFFFFFFFF << (32 - mask)) >>> 0;
+					
+					isIpAllowed = (ipNum & maskNum) === (rangeNum & maskNum);
+				}
+				
+				if (!isIpAllowed) {
+					console.error('❌ Source IP not in allowed range:', { sourceIp, allowedRange: nodeParameters.expectedSourceIp });
+					throw new NodeOperationError(this.getNode(), `Source IP ${sourceIp} not in allowed range ${nodeParameters.expectedSourceIp}`);
+				}
+				
+				console.log('✅ Source IP validation passed');
+			}
+			
+			// Extract the relevant data from the webhook payload
+			const event = body.event as string;
+			const model = body.model as string;
+			const data = body.data as IDataObject;
+			let metadata = body.metadata as IMetadata;
+			
+			console.log('📋 Extracted webhook data:', { event, model, data, metadata });
+			
+			// Add trigger node information to metadata for loop detection
+			if (!metadata) {
+				metadata = {};
+			}
+			
+			metadata.source_trigger = {
+				node_id: this.getNode().id,
+				workflow_id: this.getWorkflow().id,
+				model: nodeParameters.model,
+				event: event,
+				timestamp: new Date().toISOString()
+			};
+			
+			console.log('🔒 Added loop detection metadata:', metadata.source_trigger);
+			console.log('🔒 Final metadata being sent to workflow:', metadata);
+			
+			// Return the data in the format n8n expects
 			return {
 				webhookResponse: {
 					statusCode: 200,
 					body: { success: true },
 				},
+				workflowData: [
+					[
+						{
+							json: {
+								event,
+								model,
+								data,
+								metadata,
+								timestamp: body.timestamp,
+								subscription_id: headers['x-n8n-subscription-id'],
+							},
+						},
+					],
+				],
 			};
 		} catch (error) {
-			// Handle errors appropriately
-			throw error;
+			console.error('❌ Error processing webhook:', error);
+			
+			// Return error response
+			return {
+				webhookResponse: {
+					statusCode: 400,
+					body: { 
+						error: 'Webhook processing failed',
+						message: (error as Error).message 
+					},
+				},
+			};
 		}
 	}
 } 
