@@ -36,6 +36,9 @@ return [
     |
     */
     'webhooks' => [
+        // HMAC secret for webhook signature verification
+        'hmac_secret' => env('N8N_HMAC_SECRET'),
+        
         // Database configuration
         'database' => [
             'table' => 'n8n_webhook_subscriptions',
@@ -196,14 +199,6 @@ return [
         
         // Error handling
         'throw_on_error' => false,
-        
-        // Infinite loop prevention
-        'loop_prevention' => [
-            'enabled' => env('N8N_ELOQUENT_LOOP_PREVENTION_ENABLED', true),
-            'max_trigger_depth' => (int) env('N8N_ELOQUENT_MAX_TRIGGER_DEPTH', 1),
-            'same_model_cooldown' => (int) env('N8N_ELOQUENT_SAME_MODEL_COOLDOWN', 1), // minutes
-            'track_chain' => env('N8N_ELOQUENT_TRACK_CHAIN', true),
-        ],
     ],
 
     /*

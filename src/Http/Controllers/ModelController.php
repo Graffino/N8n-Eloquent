@@ -590,6 +590,24 @@ class ModelController extends Controller
                 ], 422);
             }
             
+            // Extract metadata from request for loop detection
+            $metadata = $request->input('metadata', []);
+            
+            // Debug: Log the metadata received
+            \Log::channel(config('n8n-eloquent.logging.channel'))
+                ->info('CRUD request metadata received', [
+                    'metadata' => $metadata,
+                    'request_all' => $request->all(),
+                ]);
+            
+            // Store metadata in request context for observers to access
+            if (!empty($metadata)) {
+                // Store metadata in request attributes for observers to access
+                $request->attributes->set('n8n_metadata', $metadata);
+                // Also store in session as backup
+                session(['n8n_metadata' => $metadata]);
+            }
+            
             // Create the record
             $record = $modelInstance->create($request->only($fillable));
             
@@ -694,6 +712,24 @@ class ModelController extends Controller
                     'error' => 'Validation failed',
                     'errors' => $validator->errors(),
                 ], 422);
+            }
+            
+            // Extract metadata from request for loop detection
+            $metadata = $request->input('metadata', []);
+            
+            // Debug: Log the metadata received
+            \Log::channel(config('n8n-eloquent.logging.channel'))
+                ->info('CRUD update request metadata received', [
+                    'metadata' => $metadata,
+                    'request_all' => $request->all(),
+                ]);
+            
+            // Store metadata in request context for observers to access
+            if (!empty($metadata)) {
+                // Store metadata in request attributes for observers to access
+                $request->attributes->set('n8n_metadata', $metadata);
+                // Also store in session as backup
+                session(['n8n_metadata' => $metadata]);
             }
             
             // Update the record

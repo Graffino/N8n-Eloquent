@@ -52,10 +52,15 @@ class WebhookController extends Controller
         $validator = Validator::make($request->all(), [
             'model' => 'required|string',
             'events' => 'required|array',
-            'events.*' => 'string|in:created,updated,deleted,restored,get,set',
+            'events.*' => 'string|in:created,updated,deleted,restored,saving,saved',
             'webhook_url' => 'required|url',
             'properties' => 'array',
             'properties.*' => 'string',
+            'node_id' => 'nullable|string',
+            'workflow_id' => 'nullable|string',
+            'verify_hmac' => 'nullable|boolean',
+            'require_timestamp' => 'nullable|boolean',
+            'expected_source_ip' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
@@ -77,12 +82,22 @@ class WebhookController extends Controller
         }
 
         try {
+            // Prepare metadata for the webhook service
+            $metadata = [
+                'node_id' => $request->input('node_id'),
+                'workflow_id' => $request->input('workflow_id'),
+                'verify_hmac' => $request->input('verify_hmac', true),
+                'require_timestamp' => $request->input('require_timestamp', true),
+                'expected_source_ip' => $request->input('expected_source_ip'),
+            ];
+            
             // Register the webhook
             $subscription = $this->webhookService->subscribe(
                 $modelClass,
                 $request->input('events'),
                 $request->input('webhook_url'),
-                $request->input('properties', [])
+                $request->input('properties', []),
+                $metadata
             );
             
             return response()->json([
