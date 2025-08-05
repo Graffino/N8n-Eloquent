@@ -1,148 +1,163 @@
-# Laravel n8n Eloquent Integration
+# n8n-eloquent
 
-A Laravel package that enables seamless integration between Laravel Eloquent models and n8n workflows.
+<div align="center">
+  <img src="docs/assets/logo.png" alt="n8n-eloquent Logo" width="200"/>
+  <h3>Seamless Laravel Eloquent Integration for n8n</h3>
+  <p>Build powerful workflows with your Laravel models</p>
+</div>
 
-## Features
+<div align="center">
+  <a href="#features">Features</a> •
+  <a href="#installation">Installation</a> •
+  <a href="#quick-start">Quick Start</a> •
+  <a href="#documentation">Documentation</a> •
+  <a href="#roadmap">Roadmap</a>
+</div>
 
-- **Model Discovery**: Automatically discover and expose Laravel Eloquent models to n8n
-- **Event Triggering**: Trigger n8n workflows based on model events (created, updated, deleted)
-- **Property Events**: Trigger workflows on property get/set operations
-- **Model Operations**: Allow n8n to read and write model data
-- **Secure Communication**: API key authentication with HMAC signature verification
-- **Configurability**: Whitelist/blacklist models, configure events per model
+## 🌟 Features
 
-## Installation
+### Current Features
+- 🔄 **Model Event Integration**
+  - Automatic webhook registration for Eloquent models
+  - Real-time model event broadcasting to n8n
+  - Support for model lifecycle events (create, update, delete)
+  - Targeted property change tracking
+  
+- 🔐 **Security & Reliability**
+  - Secure webhook endpoints with HMAC verification
+  - IP whitelisting support
+  - Automatic retry mechanism
+  - Health monitoring and subscription management
+  
+- 🛠️ **Developer Tools**
+  - Command-line tools for setup and maintenance
+  - Comprehensive debugging with Laravel Telescope integration
+  - Detailed logging and monitoring
+  - Postman collection for API testing
 
-### Laravel Package
+### Available Nodes
+1. **Laravel Eloquent Trigger Node**
+   - Watch for model events (create, update, delete)
+   - Filter by specific model properties
+   - Configure security settings
+   
+2. **Laravel Eloquent CRUD Node**
+   - Create, read, update, and delete model records
+   - Batch operations support
+   - Dynamic field mapping
+   - Relationship handling
 
+## 📦 Installation
+
+1. Install via composer:
 ```bash
-composer require n8n/eloquent
+composer require shortinc/n8n-eloquent
 ```
 
-After installing the package, publish the configuration file:
-
+2. Install n8n nodes:
 ```bash
-php artisan vendor:publish --tag=n8n-eloquent-config
+cd n8n-extension
+npm install
+npm run build
 ```
 
-Set up your `.env` file with the following variables:
-
-```
-N8N_ELOQUENT_API_SECRET=your-secret-key
-N8N_URL=http://your-n8n-instance.com
-```
-
-### n8n Extension
-
-Install the n8n Eloquent node extension in your n8n instance:
-
-```bash
-npm install n8n-nodes-laravel-eloquent
+3. Configure your `.env`:
+```env
+N8N_WEBHOOK_URL=https://your-n8n-instance.com/webhook/path
+N8N_WEBHOOK_SECRET=your-secret-key
 ```
 
-## Configuration
+## 🚀 Quick Start
 
-### Model Discovery
-
-By default, the package discovers models in the `app/Models` directory. You can configure this in the `config/n8n-eloquent.php` file:
-
+1. Add the `HasWebhooks` trait to your model:
 ```php
-'models' => [
-    'namespace' => 'App\\Models',
-    'directory' => app_path('Models'),
-    'mode' => 'whitelist', // 'whitelist', 'blacklist', or 'all'
-    'whitelist' => [
-        'App\\Models\\User',
-    ],
-    'blacklist' => [
-        'App\\Models\\PasswordReset',
-    ],
-],
-```
-
-### Event Configuration
-
-Configure which events trigger n8n workflows:
-
-```php
-'events' => [
-    'default' => ['created', 'updated', 'deleted'],
-    'property_events' => [
-        'enabled' => true,
-        'default' => [],
-    ],
-],
-```
-
-### Model-specific Configuration
-
-Configure events and properties for specific models:
-
-```php
-'models' => [
-    // ...
-    'config' => [
-        'App\\Models\\User' => [
-            'events' => ['created', 'updated', 'deleted'],
-            'getters' => ['name', 'email'],
-            'setters' => ['name', 'email'],
-        ],
-    ],
-],
-```
-
-## Usage
-
-### Laravel Side
-
-To enable n8n integration for a model, use the `HasN8nEvents` trait:
-
-```php
-use N8n\Eloquent\Traits\HasN8nEvents;
+use Shortinc\N8nEloquent\Traits\HasWebhooks;
 
 class User extends Model
 {
-    use HasN8nEvents;
+    use HasWebhooks;
     
-    // ...
+    protected static $webhookEvents = [
+        'created',
+        'updated',
+        'deleted'
+    ];
 }
 ```
 
-This will automatically register the model with the n8n integration.
+2. Create a workflow in n8n:
+   - Add the "Laravel Eloquent Trigger" node
+   - Select your model and events
+   - Connect to other nodes
+   - Activate the workflow
 
-### n8n Side
+3. Test the integration:
+```php
+User::create(['name' => 'Test User']); // Will trigger n8n workflow
+```
 
-In n8n, you can:
+## 📚 Documentation
 
-1. Trigger workflows on model events
-2. Get model data
-3. Update model data
+- [Complete Setup Guide](docs/setup.md)
+- [Node Documentation](docs/nodes.md)
+- [Security Guide](docs/security.md)
+- [Webhook Testing Guide](WEBHOOK_TESTING_GUIDE.md)
+- [API Reference](docs/api.md)
+- [Troubleshooting](docs/troubleshooting.md)
 
-## Example: User Creation Workflow
+## 🗺️ Roadmap
 
-1. When a new User model is created in Laravel, it triggers an n8n workflow
-2. The workflow sends a welcome email using Mailgrid
-3. It also updates a counter in another model called UserCounter
+### Coming Soon (Q3 2025)
+1. **Laravel Event Dispatcher Node**
+   - Dispatch any Laravel event
+   - Support for broadcasting
+   - Event payload builder
+   
+2. **Laravel Event Listener Node**
+   - Listen for Laravel events
+   - Event filtering and routing
+   - Error recovery
+   
+3. **Laravel Job Dispatcher Node**
+   - Dispatch Laravel jobs
+   - Job scheduling and delays
+   - Queue driver selection
+   - Job status monitoring
 
-## API Endpoints
+### Future Plans (Q4 2025)
+1. **Laravel Cache Node**
+   - Cache operations
+   - Multiple store support
+   - Atomic operations
+   
+2. **Laravel Queue Node**
+   - Queue management
+   - Worker control
+   - Failed job handling
+   
+3. **Laravel Notification Node**
+   - Send Laravel notifications
+   - Multiple channel support
+   - Template system
 
-The package exposes the following API endpoints:
+### Under Consideration
+- Laravel Broadcasting Node
+- Laravel File Storage Node
+- Laravel Mail Node
+- Laravel Schedule Node
+- Laravel Validation Node
 
-- `GET /api/n8n/models`: List all available models
-- `GET /api/n8n/models/{model}`: Get model metadata
-- `GET /api/n8n/models/{model}/properties`: Get model properties
-- `GET /api/n8n/models/{model}/records`: List model records
-- `GET /api/n8n/models/{model}/records/{id}`: Get a specific record
-- `POST /api/n8n/models/{model}/records`: Create a new record
-- `PUT /api/n8n/models/{model}/records/{id}`: Update a record
-- `DELETE /api/n8n/models/{model}/records/{id}`: Delete a record
-- `POST /api/n8n/webhooks/subscribe`: Subscribe to model events
-- `DELETE /api/n8n/webhooks/unsubscribe`: Unsubscribe from model events
+## 🤝 Contributing
 
-## Security
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
-The package uses API key authentication and HMAC signature verification for secure communication between Laravel and n8n.
+## 📜 License
 
-## License
+The MIT License (MIT). Please see [License File](LICENSE) for more information.
 
-MIT 
+---
+
+<div align="center">
+Built with ❤️ by Short Inc.<br>
+Powered by n8n & Laravel
+</div> 

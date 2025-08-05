@@ -1,6 +1,6 @@
 <?php
 
-namespace N8n\Eloquent\Tests\Feature;
+namespace Shortinc\N8nEloquent\Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
@@ -19,7 +19,7 @@ class ApiEndpointsTest extends TestCase
     protected function getPackageProviders($app)
     {
         return [
-            'N8n\Eloquent\Providers\N8nEloquentServiceProvider',
+            'N8n\Eloquent\Providers\ShortincN8nEloquentServiceProvider',
         ];
     }
 

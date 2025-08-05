@@ -1,0 +1,63 @@
+{
+  "name": "@shortinc/n8n-eloquent-nodes",
+  "version": "2.0.0",
+  "description": "n8n nodes for Laravel Eloquent integration - trigger workflows on model events and perform CRUD operations",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint nodes credentials --ext .ts",
+    "lint:fix": "eslint nodes credentials --ext .ts --fix"
+  },
+  "files": [
+    "dist"
+  ],
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "credentials": [
+      "dist/credentials/LaravelEloquentApi.credentials.js"
+    ],
+    "nodes": [
+      "dist/nodes/LaravelEloquentTrigger/LaravelEloquentTrigger.node.js",
+      "dist/nodes/LaravelEloquentCrud/LaravelEloquentCrud.node.js"
+    ]
+  },
+  "keywords": [
+    "n8n-community-node-package",
+    "n8n",
+    "laravel",
+    "eloquent",
+    "php",
+    "database",
+    "orm",
+    "webhook",
+    "trigger",
+    "shortinc"
+  ],
+  "author": {
+    "name": "Nick Ciolpan",
+    "email": "nick@short.inc"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/shortinc/n8n-eloquent",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shortinc/n8n-eloquent.git"
+  },
+  "engines": {
+    "node": ">=18.17.0"
+  },
+  "devDependencies": {
+    "@types/node": "^18.17.0",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "eslint": "^8.57.1",
+    "n8n-workflow": "^1.0.0",
+    "typescript": "^5.1.6"
+  },
+  "peerDependencies": {
+    "n8n-workflow": "*"
+  }
+}

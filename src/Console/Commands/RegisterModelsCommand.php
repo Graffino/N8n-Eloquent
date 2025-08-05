@@ -1,9 +1,9 @@
 <?php
 
-namespace N8n\Eloquent\Console\Commands;
+namespace Shortinc\N8nEloquent\Console\Commands;
 
 use Illuminate\Console\Command;
-use N8n\Eloquent\Services\ModelDiscoveryService;
+use Shortinc\N8nEloquent\Services\ModelDiscoveryService;
 
 class RegisterModelsCommand extends Command
 {

@@ -1,31 +1,13 @@
 <?php
 
-namespace N8n\Eloquent\Observers;
+namespace Shortinc\N8nEloquent\Observers;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use N8n\Eloquent\Services\WebhookService;
+use Illuminate\Support\Facades\Event;
+use Shortinc\N8nEloquent\Events\ModelLifecycleEvent;
 
 class ModelObserver
 {
-    /**
-     * The webhook service.
-     *
-     * @var \N8n\Eloquent\Services\WebhookService
-     */
-    protected $webhookService;
-
-    /**
-     * Create a new observer instance.
-     *
-     * @param  \N8n\Eloquent\Services\WebhookService  $webhookService
-     * @return void
-     */
-    public function __construct(WebhookService $webhookService)
-    {
-        $this->webhookService = $webhookService;
-    }
 
     /**
      * Handle the Model "created" event.
@@ -35,7 +17,7 @@ class ModelObserver
      */
     public function created(Model $model)
     {
-        $this->handleModelEvent($model, 'created');
+        Event::dispatch(new ModelLifecycleEvent($model, 'created'));
     }
 
     /**
@@ -46,7 +28,7 @@ class ModelObserver
      */
     public function updated(Model $model)
     {
-        $this->handleModelEvent($model, 'updated');
+        Event::dispatch(new ModelLifecycleEvent($model, 'updated'));
     }
 
     /**
@@ -57,7 +39,7 @@ class ModelObserver
      */
     public function deleted(Model $model)
     {
-        $this->handleModelEvent($model, 'deleted');
+        Event::dispatch(new ModelLifecycleEvent($model, 'deleted'));
     }
 
     /**
@@ -68,51 +50,28 @@ class ModelObserver
      */
     public function restored(Model $model)
     {
-        $this->handleModelEvent($model, 'restored');
+        Event::dispatch(new ModelLifecycleEvent($model, 'restored'));
     }
 
     /**
-     * Handle model events with transaction support.
+     * Handle the Model "saving" event.
      *
      * @param  \Illuminate\Database\Eloquent\Model  $model
-     * @param  string  $event
      * @return void
      */
-    protected function handleModelEvent(Model $model, string $event)
+    public function saving(Model $model)
     {
-        $modelClass = get_class($model);
-        
-        // Check if transactions are enabled
-        $transactionsEnabled = config('n8n-eloquent.events.transactions.enabled', true);
-        $rollbackOnError = config('n8n-eloquent.events.transactions.rollback_on_error', true);
-        
-        try {
-            if ($transactionsEnabled) {
-                DB::beginTransaction();
-            }
-            
-            // Trigger the webhook
-            $this->webhookService->triggerWebhook($modelClass, $event, $model);
-            
-            if ($transactionsEnabled) {
-                DB::commit();
-            }
-            
-            Log::channel(config('n8n-eloquent.logging.channel'))
-                ->info("Processed {$event} event for model {$modelClass}", [
-                    'model_id' => $model->getKey(),
-                ]);
-        } catch (\Throwable $e) {
-            if ($transactionsEnabled && $rollbackOnError) {
-                DB::rollBack();
-            }
-            
-            Log::channel(config('n8n-eloquent.logging.channel'))
-                ->error("Error processing {$event} event for model {$modelClass}", [
-                    'model_id' => $model->getKey(),
-                    'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString(),
-                ]);
-        }
+        Event::dispatch(new ModelLifecycleEvent($model, 'saving'));
+    }
+
+    /**
+     * Handle the Model "saved" event.
+     *
+     * @param  \Illuminate\Database\Eloquent\Model  $model
+     * @return void
+     */
+    public function saved(Model $model)
+    {
+        Event::dispatch(new ModelLifecycleEvent($model, 'saved'));
     }
 } 
