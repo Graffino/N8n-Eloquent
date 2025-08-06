@@ -41,13 +41,30 @@ class EventController extends Controller
     }
 
     /**
-     * Get all available events.
+     * Get all available events for listening.
      *
      * @return \Illuminate\Http\JsonResponse
      */
     public function index()
     {
-        $events = $this->eventDiscovery->getEvents()->map(function ($eventClass) {
+        $events = $this->eventDiscovery->getListenableEvents()->map(function ($eventClass) {
+            $metadata = $this->eventDiscovery->getEventMetadata($eventClass);
+            return $metadata;
+        })->filter()->values();
+
+        return response()->json([
+            'events' => $events,
+        ]);
+    }
+
+    /**
+     * Get all available events for dispatching.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function dispatchable()
+    {
+        $events = $this->eventDiscovery->getDispatchableEvents()->map(function ($eventClass) {
             $metadata = $this->eventDiscovery->getEventMetadata($eventClass);
             return $metadata;
         })->filter()->values();
@@ -252,10 +269,10 @@ class EventController extends Controller
                 ], 404);
             }
             
-            // Check if event is configured as available
-            if (!$this->eventDiscovery->isEventConfigured($eventClass)) {
+            // Check if event is configured as available for dispatching
+            if (!$this->eventDiscovery->isEventDispatchable($eventClass)) {
                 return response()->json([
-                    'error' => "Event class {$eventClass} is not configured as available",
+                    'error' => "Event class {$eventClass} is not configured as available for dispatching",
                 ], 403);
             }
             
@@ -297,10 +314,10 @@ class EventController extends Controller
                 ], 404);
             }
             
-            // Check if event is configured as available
-            if (!$this->eventDiscovery->isEventConfigured($eventClass)) {
+            // Check if event is configured as available for dispatching
+            if (!$this->eventDiscovery->isEventDispatchable($eventClass)) {
                 return response()->json([
-                    'error' => "Event class {$eventClass} is not configured as available",
+                    'error' => "Event class {$eventClass} is not configured as available for dispatching",
                 ], 403);
             }
             

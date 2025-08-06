@@ -161,24 +161,25 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Events
+    | Event Listeners Configuration
     |--------------------------------------------------------------------------
     |
-    | Configure which events should be fired and how they are handled.
+    | Configure which events should be available for n8n to listen to.
+    | Only events listed here will be discoverable and listenable through the API.
+    | This is similar to the trigger node configuration.
     |
     */
-    'events' => [
-        // Enable/disable event processing globally
-        'enabled' => env('N8N_ELOQUENT_EVENTS_ENABLED', true),
-        
-        // Default events to listen for
-        'default' => ['created', 'updated', 'deleted'],
+    'event_listeners' => [
+        // List of event classes that can be listened to through n8n
+        'available' => [
+            // Example event classes:
+            // 'App\\Events\\UserRegistered',
+            // 'App\\Events\\OrderShipped',
+        ],
         
         // Event discovery configuration
-        'namespace' => env('N8N_ELOQUENT_EVENTS_NAMESPACE', 'App\\Events'),
-        'directory' => env('N8N_ELOQUENT_EVENTS_DIRECTORY', app_path('Events')),
         'discovery' => [
-            'mode' => env('N8N_ELOQUENT_EVENTS_DISCOVERY_MODE', 'all'), // 'all', 'whitelist', 'blacklist'
+            'mode' => env('N8N_ELOQUENT_EVENT_LISTENER_DISCOVERY_MODE', 'all'), // 'all', 'whitelist', 'blacklist'
             'whitelist' => [
                 // Example: 'App\\Events\\UserRegistered',
                 // Example: 'App\\Events\\OrderShipped',
@@ -190,7 +191,7 @@ return [
         
         // Event webhook configuration
         'webhooks' => [
-            'enabled' => env('N8N_ELOQUENT_EVENT_WEBHOOKS_ENABLED', true),
+            'enabled' => env('N8N_ELOQUENT_EVENT_LISTENER_WEBHOOKS_ENABLED', true),
         ],
         
         // Event-specific configuration
@@ -223,6 +224,36 @@ return [
         'queue' => [
             'enabled' => false,
             'name' => 'default',
+        ],
+        
+        // Error handling
+        'throw_on_error' => false,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Event Dispatchers Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Configure which events are available for n8n to dispatch.
+    | Only events listed here will be discoverable and dispatchable through the API.
+    | Parameters are automatically discovered from the event class constructor.
+    |
+    */
+    'event_dispatchers' => [
+        // List of event classes that can be dispatched through n8n
+        'available' => [
+            // Example event classes:
+            // 'App\\Events\\SendEmailEvent',
+            // 'App\\Events\\ProcessDataEvent',
+        ],
+        
+        // Event-specific configuration
+        'config' => [
+            // Example: 'App\\Events\\SendEmailEvent' => [
+            //     'queue_events' => false,
+            //     'queue_name' => 'default',
+            // ],
         ],
         
         // Error handling

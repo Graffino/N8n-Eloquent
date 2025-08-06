@@ -1,6 +1,7 @@
 # Complete Setup Guide
 
 ## Prerequisites
+
 - Laravel 10.x or higher
 - n8n 1.0.0 or higher
 - PHP 8.1 or higher
@@ -23,6 +24,7 @@ php artisan vendor:publish --provider="Shortinc\N8nEloquent\N8nEloquentServicePr
 ```
 
 This will create:
+
 - `config/n8n-eloquent.php` - Main configuration file
 - `database/migrations/*_create_webhook_subscriptions_table.php` - Webhook subscription table
 
@@ -88,7 +90,53 @@ class User extends Model
 }
 ```
 
-### 7. Configure n8n
+### 7. Configure Events
+
+The package now supports separate configuration for event listeners and event dispatchers:
+
+#### Event Listeners (for n8n trigger nodes)
+
+Configure which events can be listened to by n8n trigger nodes:
+
+```php
+// config/n8n-eloquent.php
+'event_listeners' => [
+    // List specific events that can be listened to
+    'available' => [
+        'App\\Events\\UserRegistered',
+        'App\\Events\\OrderShipped',
+    ],
+    
+    // Or use discovery mode with whitelist/blacklist
+    'discovery' => [
+        'mode' => 'whitelist', // 'all', 'whitelist', 'blacklist'
+        'whitelist' => [
+            'App\\Events\\UserRegistered',
+            'App\\Events\\OrderShipped',
+        ],
+        'blacklist' => [
+            'App\\Events\\InternalEvent',
+        ],
+    ],
+],
+```
+
+#### Event Dispatchers (for n8n action nodes)
+
+Configure which events can be dispatched by n8n action nodes:
+
+```php
+// config/n8n-eloquent.php
+'event_dispatchers' => [
+    // Only events listed here can be dispatched
+    'available' => [
+        'App\\Events\\SendEmailEvent',
+        'App\\Events\\ProcessDataEvent',
+    ],
+],
+```
+
+### 8. Configure n8n
 
 1. Open your n8n instance
 2. Go to Settings → Credentials
@@ -138,4 +186,4 @@ See our [Troubleshooting Guide](troubleshooting.md) for common issues and soluti
 
 - [Node Documentation](nodes.md)
 - [Security Guide](security.md)
-- [API Reference](api.md) 
+- [API Reference](api.md)

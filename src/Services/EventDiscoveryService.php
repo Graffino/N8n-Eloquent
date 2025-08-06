@@ -56,11 +56,8 @@ class EventDiscoveryService
             return $this->discoveredEvents;
         }
 
-        $eventNamespace = config('n8n-eloquent.events.namespace', 'App\\Events');
-        $eventDirectory = config('n8n-eloquent.events.directory', app_path('Events'));
-        $mode = config('n8n-eloquent.events.discovery.mode', 'all');
-        $whitelist = config('n8n-eloquent.events.discovery.whitelist', []);
-        $blacklist = config('n8n-eloquent.events.discovery.blacklist', []);
+        $eventNamespace = env('N8N_ELOQUENT_EVENTS_NAMESPACE', 'App\\Events');
+        $eventDirectory = env('N8N_ELOQUENT_EVENTS_DIRECTORY', app_path('Events'));
 
         // If directory doesn't exist, return empty collection
         if (!$this->files->exists($eventDirectory)) {
@@ -96,19 +93,59 @@ class EventDiscoveryService
             }
         });
 
-        // Apply whitelist/blacklist filtering
-        if ($mode === 'whitelist' && !empty($whitelist)) {
-            $laravelEvents = $laravelEvents->filter(function ($className) use ($whitelist) {
-                return in_array($className, $whitelist);
-            });
-        } elseif ($mode === 'blacklist' && !empty($blacklist)) {
-            $laravelEvents = $laravelEvents->filter(function ($className) use ($blacklist) {
-                return !in_array($className, $blacklist);
+        $this->discoveredEvents = $laravelEvents;
+        return $this->discoveredEvents;
+    }
+
+    /**
+     * Get events available for listening (similar to trigger node).
+     *
+     * @return \Illuminate\Support\Collection
+     */
+    public function getListenableEvents(): Collection
+    {
+        $allEvents = $this->getEvents();
+        $availableEvents = config('n8n-eloquent.event_listeners.available', []);
+        $mode = config('n8n-eloquent.event_listeners.discovery.mode', 'all');
+        $whitelist = config('n8n-eloquent.event_listeners.discovery.whitelist', []);
+        $blacklist = config('n8n-eloquent.event_listeners.discovery.blacklist', []);
+
+        // If available list is specified, use only those events
+        if (!empty($availableEvents)) {
+            return $allEvents->filter(function ($eventClass) use ($availableEvents) {
+                return in_array($eventClass, $availableEvents);
             });
         }
 
-        $this->discoveredEvents = $laravelEvents;
-        return $this->discoveredEvents;
+        // Apply whitelist/blacklist filtering
+        if ($mode === 'whitelist' && !empty($whitelist)) {
+            return $allEvents->filter(function ($eventClass) use ($whitelist) {
+                return in_array($eventClass, $whitelist);
+            });
+        } elseif ($mode === 'blacklist' && !empty($blacklist)) {
+            return $allEvents->filter(function ($eventClass) use ($blacklist) {
+                return !in_array($eventClass, $blacklist);
+            });
+        }
+
+        // Default to all events
+        return $allEvents;
+    }
+
+    /**
+     * Get events available for dispatching (similar to job dispatcher).
+     *
+     * @return \Illuminate\Support\Collection
+     */
+    public function getDispatchableEvents(): Collection
+    {
+        $allEvents = $this->getEvents();
+        $availableEvents = config('n8n-eloquent.event_dispatchers.available', []);
+
+        // Only return events that are explicitly listed as available
+        return $allEvents->filter(function ($eventClass) use ($availableEvents) {
+            return in_array($eventClass, $availableEvents);
+        });
     }
 
     /**
@@ -134,8 +171,10 @@ class EventDiscoveryService
                 return $property->getName();
             }, $properties);
 
-            // Get event configuration
-            $eventConfig = config("n8n-eloquent.events.config.{$eventClass}", []);
+            // Get event configuration (check both listener and dispatcher configs)
+            $listenerConfig = config("n8n-eloquent.event_listeners.config.{$eventClass}", []);
+            $dispatcherConfig = config("n8n-eloquent.event_dispatchers.config.{$eventClass}", []);
+            $eventConfig = array_merge($listenerConfig, $dispatcherConfig);
             
             return [
                 'class' => $eventClass,
@@ -173,21 +212,25 @@ class EventDiscoveryService
     }
 
     /**
-     * Check if an event is configured as available for n8n.
+     * Check if an event is configured as available for listening.
      *
      * @param  string  $eventClass
      * @return bool
      */
-    public function isEventConfigured(string $eventClass): bool
+    public function isEventListenable(string $eventClass): bool
     {
-        // Check if the event is in the discovered events
-        if (!$this->getEvents()->contains($eventClass)) {
-            return false;
-        }
+        return $this->getListenableEvents()->contains($eventClass);
+    }
 
-        // Check if the event is explicitly configured as available
-        $eventConfig = config("n8n-eloquent.events.config.{$eventClass}", []);
-        return !isset($eventConfig['enabled']) || $eventConfig['enabled'] !== false;
+    /**
+     * Check if an event is configured as available for dispatching.
+     *
+     * @param  string  $eventClass
+     * @return bool
+     */
+    public function isEventDispatchable(string $eventClass): bool
+    {
+        return $this->getDispatchableEvents()->contains($eventClass);
     }
 
     /**

@@ -143,11 +143,11 @@ export class LaravelEventDispatcher implements INodeType {
 					const baseUrl = credentials.baseUrl as string;
 					
 					console.log('🔑 Using credentials with baseUrl:', baseUrl);
-					console.log('🌐 Making request to /api/n8n/events');
+					console.log('🌐 Making request to /api/n8n/events/dispatchable');
 					
 					const response = await this.helpers.httpRequestWithAuthentication.call(this, 'laravelEloquentApi', {
 						method: 'GET',
-						url: `${baseUrl}/api/n8n/events`,
+						url: `${baseUrl}/api/n8n/events/dispatchable`,
 						json: true,
 						skipSslCertificateValidation: true,
 					});

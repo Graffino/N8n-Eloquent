@@ -59,6 +59,7 @@ Route::prefix($prefix)->middleware(array_merge($middleware, [AuthenticateN8n::cl
     
     // Event discovery and webhook subscription
     Route::get('/events', [EventController::class, 'index']);
+    Route::get('/events/dispatchable', [EventController::class, 'dispatchable']);
     Route::get('/events/search', [EventController::class, 'search']);
     Route::get('/events/{event}', [EventController::class, 'show']);
     Route::get('/events/{event}/parameters', [EventController::class, 'parameters']);
