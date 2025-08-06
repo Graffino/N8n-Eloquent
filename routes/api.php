@@ -5,6 +5,7 @@ use Shortinc\N8nEloquent\Http\Controllers\ModelController;
 use Shortinc\N8nEloquent\Http\Controllers\WebhookController;
 use Shortinc\N8nEloquent\Http\Controllers\WebhookManagementController;
 use Shortinc\N8nEloquent\Http\Controllers\SubscriptionHealthController;
+use Shortinc\N8nEloquent\Http\Controllers\JobController;
 use Shortinc\N8nEloquent\Http\Middleware\AuthenticateN8n;
 use Shortinc\N8nEloquent\Http\Middleware\ValidateHmacSignature;
 use Shortinc\N8nEloquent\Http\Middleware\RateLimitWebhooks;
@@ -48,4 +49,10 @@ Route::prefix($prefix)->middleware(array_merge($middleware, [AuthenticateN8n::cl
     Route::get('/health/analytics', [SubscriptionHealthController::class, 'analytics']);
     Route::get('/health/validate/{subscription}', [SubscriptionHealthController::class, 'validateSubscription']);
     Route::post('/test-credentials', [SubscriptionHealthController::class, 'testCredentials']);
+    
+    // Job discovery and dispatching
+    Route::get('/jobs', [JobController::class, 'index']);
+    Route::get('/jobs/{job}', [JobController::class, 'show']);
+    Route::get('/jobs/{job}/parameters', [JobController::class, 'parameters']);
+    Route::post('/jobs/{job}/dispatch', [JobController::class, 'dispatch']);
 }); 
