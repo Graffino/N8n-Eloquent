@@ -171,4 +171,175 @@ class EventDiscoveryService
                    str_contains($eventNamespace, $query);
         });
     }
+
+    /**
+     * Check if an event is configured as available for n8n.
+     *
+     * @param  string  $eventClass
+     * @return bool
+     */
+    public function isEventConfigured(string $eventClass): bool
+    {
+        // Check if the event is in the discovered events
+        if (!$this->getEvents()->contains($eventClass)) {
+            return false;
+        }
+
+        // Check if the event is explicitly configured as available
+        $eventConfig = config("n8n-eloquent.events.config.{$eventClass}", []);
+        return !isset($eventConfig['enabled']) || $eventConfig['enabled'] !== false;
+    }
+
+    /**
+     * Get event parameters for dispatching.
+     *
+     * @param  string  $eventClass
+     * @return array
+     */
+    public function getEventParameters(string $eventClass): array
+    {
+        if (!class_exists($eventClass)) {
+            return [];
+        }
+
+        try {
+            $reflection = new ReflectionClass($eventClass);
+            $constructor = $reflection->getConstructor();
+            
+            if (!$constructor) {
+                return [];
+            }
+
+            $parameters = [];
+            foreach ($constructor->getParameters() as $parameter) {
+                $paramName = $parameter->getName();
+                $paramType = $parameter->getType();
+                $isRequired = !$parameter->isOptional();
+                $defaultValue = $parameter->isOptional() ? $parameter->getDefaultValue() : null;
+
+                $parameters[] = [
+                    'name' => $paramName,
+                    'type' => $paramType ? $paramType->getName() : 'mixed',
+                    'required' => $isRequired,
+                    'default' => $defaultValue,
+                    'label' => ucfirst(str_replace('_', ' ', $paramName)),
+                ];
+            }
+
+            return $parameters;
+        } catch (\Throwable $e) {
+            Log::channel(config('n8n-eloquent.logging.channel'))
+                ->error("Error getting parameters for event {$eventClass}", [
+                    'error' => $e->getMessage(),
+                ]);
+            return [];
+        }
+    }
+
+    /**
+     * Create an event instance with parameters.
+     *
+     * @param  string  $eventClass
+     * @param  array  $parameters
+     * @param  array  $metadata
+     * @return object|null
+     */
+    public function createEventInstance(string $eventClass, array $parameters = [], array $metadata = []): ?object
+    {
+        if (!class_exists($eventClass)) {
+            return null;
+        }
+
+        try {
+            $reflection = new ReflectionClass($eventClass);
+            $constructor = $reflection->getConstructor();
+            
+            if (!$constructor) {
+                // Event has no constructor, create instance without parameters
+                $instance = $reflection->newInstance();
+                
+                // Set metadata as public properties if they exist
+                foreach ($metadata as $key => $value) {
+                    if ($reflection->hasProperty($key)) {
+                        $property = $reflection->getProperty($key);
+                        if ($property->isPublic()) {
+                            $property->setValue($instance, $value);
+                        }
+                    }
+                }
+                
+                return $instance;
+            }
+
+            // Get constructor parameters
+            $constructorParams = $constructor->getParameters();
+            $args = [];
+
+            // Build arguments array based on constructor parameters
+            foreach ($constructorParams as $param) {
+                $paramName = $param->getName();
+                $paramType = $param->getType();
+                
+                if (isset($parameters[$paramName])) {
+                    $paramValue = $parameters[$paramName];
+                    
+                    // If the parameter is a type-hinted model class, try to resolve it
+                    if ($paramType && !$paramType->isBuiltin()) {
+                        $typeName = $paramType->getName();
+                        
+                        // Check if it's a model class
+                        if (class_exists($typeName) && is_subclass_of($typeName, 'Illuminate\Database\Eloquent\Model')) {
+                            // If we have an array/object with an 'id' field, try to find the model
+                            if (is_array($paramValue) && isset($paramValue['id'])) {
+                                try {
+                                    $model = $typeName::find($paramValue['id']);
+                                    if ($model) {
+                                        $args[] = $model;
+                                    } else {
+                                        // If model not found, pass null or create a new instance with the data
+                                        $args[] = null;
+                                    }
+                                } catch (\Throwable $e) {
+                                    Log::channel(config('n8n-eloquent.logging.channel'))
+                                        ->warning("Could not resolve model instance for {$typeName}", [
+                                            'id' => $paramValue['id'] ?? 'unknown',
+                                            'error' => $e->getMessage(),
+                                        ]);
+                                    $args[] = null;
+                                }
+                            } else {
+                                // If no ID or not an array, pass null
+                                $args[] = null;
+                            }
+                        } else {
+                            // Not a model class, pass the value as-is
+                            $args[] = $paramValue;
+                        }
+                    } else {
+                        // Built-in type or no type hint, pass the value as-is
+                        $args[] = $paramValue;
+                    }
+                } elseif ($param->isOptional()) {
+                    $args[] = $param->getDefaultValue();
+                } else {
+                    // Required parameter missing, use null as fallback
+                    $args[] = null;
+                }
+            }
+
+            // Create instance with constructor arguments
+            $instance = $reflection->newInstanceArgs($args);
+            
+
+            
+            return $instance;
+        } catch (\Throwable $e) {
+            Log::channel(config('n8n-eloquent.logging.channel'))
+                ->error("Error creating event instance for {$eventClass}", [
+                    'parameters' => $parameters,
+                    'error' => $e->getMessage(),
+                ]);
+            return null;
+        }
+    }
 } 
