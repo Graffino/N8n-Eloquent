@@ -203,6 +203,25 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Jobs Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Configure which jobs are available for n8n to dispatch.
+    | Only jobs listed here will be discoverable and dispatchable through the API.
+    | Parameters are automatically discovered from the job class constructor.
+    |
+    */
+    'jobs' => [
+        // List of job classes that can be dispatched through n8n
+        'available' => [
+            // Example job classes:
+            // 'App\\Jobs\\SendEmailJob',
+            // 'App\\Jobs\\ProcessDataJob',
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | n8n Connection
     |--------------------------------------------------------------------------
     |

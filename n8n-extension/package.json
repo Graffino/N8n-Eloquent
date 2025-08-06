@@ -21,7 +21,8 @@
     ],
     "nodes": [
       "dist/nodes/LaravelEloquentTrigger/LaravelEloquentTrigger.node.js",
-      "dist/nodes/LaravelEloquentCrud/LaravelEloquentCrud.node.js"
+      "dist/nodes/LaravelEloquentCrud/LaravelEloquentCrud.node.js",
+      "dist/nodes/LaravelJobDispatcher/LaravelJobDispatcher.node.js"
     ]
   },
   "keywords": [
