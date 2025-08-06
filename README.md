@@ -21,39 +21,63 @@
 - 🔄 **Model Event Integration**
   - Automatic webhook registration for Eloquent models
   - Real-time model event broadcasting to n8n
-  - Support for model lifecycle events (create, update, delete)
-  - Targeted property change tracking
+  - Support for all model lifecycle events (create, update, delete, restore, saving, saved)
+  - Targeted property change tracking with configurable field visibility
+  - Automatic webhook lifecycle management with health monitoring
   
-- 🔐 **Security & Reliability**
-  - Secure webhook endpoints with HMAC verification
-  - IP whitelisting support
-  - Automatic retry mechanism
-  - Health monitoring and subscription management
-  
-- 🛠️ **Developer Tools**
-  - Command-line tools for setup and maintenance
-  - Comprehensive debugging with Laravel Telescope integration
-  - Detailed logging and monitoring
-  - Postman collection for API testing
+- 🔐 **Enterprise-Grade Security**
+  - Multi-layer security architecture with HMAC-SHA256 signature verification
+  - API key authentication with timing-safe comparisons
+  - IP whitelisting with CIDR support for webhook sources
+  - Timestamp validation to prevent replay attacks
+  - Comprehensive security violation logging with sanitized output
+  - Rate limiting with configurable thresholds
+
+  - **🔭 Laravel Telescope Integration** - Advanced debugging and monitoring dashboard
+  - Comprehensive logging with custom n8n tagging for easy filtering
+  - Postman collection for API testing and development
+  - Automatic model discovery with dynamic field loading
+  - Health monitoring with subscription recovery mechanisms
 
 ### Available Nodes
 
 1. **Laravel Eloquent Trigger Node**
-   - Watch for model events (create, update, delete)
-   - Filter by specific model properties
-   - Configure security settings
+   - Watch for model events (create, update, delete, restore, saving, saved)
+   - Filter by specific model properties with advanced operators
+   - Configure security settings (HMAC verification, IP filtering, timestamp validation)
+   - Real-time event broadcasting with metadata tracking
 
-2. **Laravel Eloquent CRUD Node**
-   - Create, read, update, and delete model records
-   - Batch operations support
-   - Dynamic field mapping
-   - Relationship handling
+2. **Laravel Event Listener Node** ⭐ **NEW**
+   - Listen for custom Laravel events and trigger n8n workflows
+   - Automatic event discovery and webhook registration
+   - Full event payload serialization with metadata tracking
+   - Loop prevention with n8n metadata detection
+   - Security settings (HMAC verification, IP filtering, timestamp validation)
 
-3. **Laravel Job Dispatcher Node** ⭐ **NEW**
-   - Dispatch Laravel jobs from n8n workflows
-   - Configurable job discovery (security-first approach)
-   - Automatic parameter discovery
-   - Queue management and scheduling
+3. **Laravel Eloquent CRUD Node** ⭐ **CONSOLIDATED**
+   - **Unified Operations**: Create, read, update, and delete model records in a single node
+   - **Advanced Filtering**: Multiple operators (equals, not equals, greater than, less than, like, in)
+   - **Relationship Support**: Include related models with dynamic loading
+   - **Pagination & Sorting**: Configurable limits, offsets, and order by clauses
+   - **Batch Operations**: Support for multiple record operations
+   - **Enhanced Error Handling**: Comprehensive validation and error categorization
+
+4. **Laravel Job Dispatcher Node** ⭐ **ENHANCED**
+   - Dispatch Laravel jobs from n8n workflows with full parameter validation
+   - **Security-First Approach**: Only configured jobs are discoverable and dispatchable
+   - **Multiple Dispatch Modes**: Immediate, delayed, and synchronous execution
+   - **Queue Management**: Configurable queues, connections, and advanced options
+   - **Automatic Parameter Discovery**: Dynamic loading of job constructor parameters
+   - **Metadata Tracking**: Jobs include workflow and execution context information
+
+### Advanced Capabilities
+
+- **🔭 Laravel Telescope Integration**: Monitor all n8n-related activities with custom tagging
+- **Health Monitoring**: Automatic subscription recovery and health status tracking
+- **Comprehensive Logging**: Detailed audit trails with n8n-specific tags for easy filtering
+- **Error Recovery**: Robust error handling with automatic retry mechanisms
+- **Performance Optimization**: Efficient request handling with minimal overhead
+- **Scalability**: Designed for high-volume webhook processing with concurrent support
 
 ## 📦 Installation
 
@@ -147,42 +171,32 @@ User::create(['name' => 'Test User']); // Will trigger n8n workflow
    - Dispatch any Laravel event
    - Support for broadcasting
    - Event payload builder
-
-2. **Laravel Event Listener Node**
-   - Listen for Laravel events
-   - Event filtering and routing
-   - Error recovery
-
-3. **Laravel Job Dispatcher Node** ✅ **Available**
-   - Dispatch Laravel jobs
-   - Job scheduling and delays
-   - Queue driver selection
-   - Job status monitoring
+   - Practical examples: welcome emails, admin notifications, system logging
 
 ### Future Plans (Q4 2025)
 
 1. **Laravel Cache Node**
-   - Cache operations
-   - Multiple store support
-   - Atomic operations
+   - Cache operations with multiple store support
+   - Atomic operations and cache tagging
+   - Practical examples: API response caching, analytics storage, session management
 
 2. **Laravel Queue Node**
-   - Queue management
-   - Worker control
-   - Failed job handling
+   - Queue management and worker control
+   - Failed job handling and retry mechanisms
+   - Practical examples: job monitoring, queue optimization, workload distribution
 
 3. **Laravel Notification Node**
-   - Send Laravel notifications
-   - Multiple channel support
-   - Template system
+   - Send Laravel notifications through multiple channels
+   - Template system with dynamic content
+   - Practical examples: multi-channel alerts, marketing communications, appointment reminders
 
 ### Under Consideration
 
-- Laravel Broadcasting Node
-- Laravel File Storage Node
-- Laravel Mail Node
-- Laravel Schedule Node
-- Laravel Validation Node
+- **Laravel Broadcasting Node**: Real-time broadcasting for chat applications, live dashboards, and collaborative features
+- **Laravel File Storage Node**: File operations across different storage providers with backup and sharing capabilities
+- **Laravel Mail Node**: Email management with templates, queuing, and delivery tracking
+- **Laravel Schedule Node**: Task scheduling for backups, cleanup, and recurring operations
+- **Laravel Validation Node**: Data validation with custom rules and form validation logic
 
 ## 🤝 Contributing
 

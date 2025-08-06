@@ -489,4 +489,189 @@ class WebhookService
 
         return $this->migrateCacheToDatabase();
     }
+
+    /**
+     * Subscribe to Laravel events.
+     *
+     * @param  string  $eventClass
+     * @param  string  $webhookUrl
+     * @param  array  $metadata
+     * @return array
+     */
+    public function subscribeToEvent(
+        string $eventClass,
+        string $webhookUrl,
+        array $metadata = []
+    ): array {
+        // Check if a subscription already exists for this exact webhook URL and event
+        $existingSubscription = WebhookSubscription::where('webhook_url', $webhookUrl)
+            ->where('model_class', $eventClass)
+            ->where('is_event_subscription', true)
+            ->first();
+
+        if ($existingSubscription) {
+            // Update the existing subscription
+            $existingSubscription->update([
+                'node_id' => $metadata['node_id'] ?? null,
+                'workflow_id' => $metadata['workflow_id'] ?? null,
+                'verify_hmac' => $metadata['verify_hmac'] ?? true,
+                'require_timestamp' => $metadata['require_timestamp'] ?? true,
+                'expected_source_ip' => $metadata['expected_source_ip'] ?? null,
+                'active' => true,
+                'last_error' => null, // Clear any previous errors
+            ]);
+
+            // Clear cache to force refresh
+            $this->clearSubscriptionsCache();
+
+            Log::channel(config('n8n-eloquent.logging.channel'))
+                ->info("Updated existing event webhook subscription for {$eventClass}", [
+                    'subscription_id' => $existingSubscription->id,
+                    'webhook_url' => $webhookUrl,
+                ]);
+
+            return [
+                'message' => 'Event webhook subscription updated successfully',
+                'subscription' => $existingSubscription->fresh()->toLegacyArray(),
+            ];
+        }
+
+        // Create a new subscription if none exists
+        $subscription = WebhookSubscription::create([
+            'model_class' => $eventClass,
+            'events' => ['dispatched'], // Event subscriptions only listen for 'dispatched' event
+            'webhook_url' => $webhookUrl,
+            'properties' => [],
+            'node_id' => $metadata['node_id'] ?? null,
+            'workflow_id' => $metadata['workflow_id'] ?? null,
+            'verify_hmac' => $metadata['verify_hmac'] ?? true,
+            'require_timestamp' => $metadata['require_timestamp'] ?? true,
+            'expected_source_ip' => $metadata['expected_source_ip'] ?? null,
+            'active' => true,
+            'is_event_subscription' => true, // Mark as event subscription
+        ]);
+
+        // Clear cache to force refresh
+        $this->clearSubscriptionsCache();
+
+        Log::channel(config('n8n-eloquent.logging.channel'))
+            ->info("Created new event webhook subscription for {$eventClass}", [
+                'subscription_id' => $subscription->id,
+                'webhook_url' => $webhookUrl,
+            ]);
+
+        return [
+            'message' => 'Event webhook subscription created successfully',
+            'subscription' => $subscription->toLegacyArray(),
+        ];
+    }
+
+    /**
+     * Unsubscribe from Laravel events.
+     *
+     * @param  string  $subscriptionId
+     * @return bool
+     */
+    public function unsubscribeFromEvent(string $subscriptionId): bool
+    {
+        return $this->unsubscribe($subscriptionId);
+    }
+
+    /**
+     * Trigger webhook for a Laravel event.
+     *
+     * @param  string  $eventClass
+     * @param  mixed  $eventInstance
+     * @param  array  $additionalPayload
+     * @return void
+     */
+    public function triggerEventWebhook(string $eventClass, $eventInstance, array $additionalPayload = []): void
+    {
+        $subscriptions = $this->getSubscriptionsForEvent($eventClass);
+
+        if (empty($subscriptions)) {
+            return;
+        }
+
+        // Prepare the webhook payload
+        $payload = [
+            'event' => 'dispatched',
+            'event_class' => $eventClass,
+            'data' => $this->serializeEvent($eventInstance),
+            'timestamp' => now()->toISOString(),
+        ];
+
+        // Merge additional payload
+        $payload = array_merge($payload, $additionalPayload);
+
+        // Send webhook to all subscriptions
+        foreach ($subscriptions as $subscription) {
+            try {
+                $this->sendWebhookRequest($subscription['webhook_url'], $payload, WebhookSubscription::find($subscription['id']));
+            } catch (\Throwable $e) {
+                Log::channel(config('n8n-eloquent.logging.channel'))
+                    ->error("Failed to send event webhook for {$eventClass}", [
+                        'subscription_id' => $subscription['id'],
+                        'webhook_url' => $subscription['webhook_url'],
+                        'error' => $e->getMessage(),
+                    ]);
+            }
+        }
+    }
+
+    /**
+     * Get subscriptions for a specific event.
+     *
+     * @param  string  $eventClass
+     * @return array
+     */
+    public function getSubscriptionsForEvent(string $eventClass): array
+    {
+        return WebhookSubscription::where('model_class', $eventClass)
+            ->where('is_event_subscription', true)
+            ->where('active', true)
+            ->get()
+            ->map(function ($subscription) {
+                return $subscription->toLegacyArray();
+            })
+            ->toArray();
+    }
+
+    /**
+     * Serialize an event instance for webhook payload.
+     *
+     * @param  mixed  $eventInstance
+     * @return array
+     */
+    protected function serializeEvent($eventInstance): array
+    {
+        if (is_object($eventInstance)) {
+            // Get all public properties
+            $reflection = new \ReflectionClass($eventInstance);
+            $properties = $reflection->getProperties(\ReflectionProperty::IS_PUBLIC);
+            
+            $data = [];
+            foreach ($properties as $property) {
+                $propertyName = $property->getName();
+                $propertyValue = $property->getValue($eventInstance);
+                
+                // Convert to array if it's an object that can be serialized
+                if (is_object($propertyValue)) {
+                    if (method_exists($propertyValue, 'toArray')) {
+                        $data[$propertyName] = $propertyValue->toArray();
+                    } elseif (method_exists($propertyValue, '__toString')) {
+                        $data[$propertyName] = (string) $propertyValue;
+                    } else {
+                        $data[$propertyName] = get_class($propertyValue);
+                    }
+                } else {
+                    $data[$propertyName] = $propertyValue;
+                }
+            }
+            
+            return $data;
+        }
+        
+        return [];
+    }
 } 
