@@ -20,6 +20,7 @@ A comprehensive n8n community node package that provides seamless integration wi
 ### Prerequisites
 
 1. **Laravel Package**: First, install the Laravel n8n Eloquent package in your Laravel application:
+
    ```bash
    composer require n8n-eloquent/laravel-package
    ```
@@ -71,6 +72,7 @@ php artisan n8n:setup
 Triggers workflows when Laravel model events occur.
 
 **Configuration:**
+
 - **Model**: Laravel model class (e.g., `App\Models\User`)
 - **Events**: Select which events to listen for:
   - `created` - When a new record is created
@@ -82,6 +84,7 @@ Triggers workflows when Laravel model events occur.
 - **Verify HMAC Signature**: Enable/disable signature verification
 
 **Output:**
+
 ```json
 {
   "event": "created",
@@ -98,11 +101,49 @@ Triggers workflows when Laravel model events occur.
 }
 ```
 
+### 🎯 Laravel Event Listener
+
+Triggers workflows when custom Laravel events are dispatched.
+
+**Configuration:**
+
+- **Event**: Laravel event class (e.g., `App\Events\UserRegistered`)
+- **Verify HMAC Signature**: Enable/disable signature verification
+- **Require Timestamp Validation**: Reject webhooks older than 5 minutes
+- **Expected Source IP**: Restrict webhooks to specific IP addresses
+
+**Output:**
+
+```json
+{
+  "event": "dispatched",
+  "event_class": "App\\Events\\UserRegistered",
+  "data": {
+    "userId": 123,
+    "action": "user_login",
+    "data": {
+      "ip": "192.168.1.1",
+      "userAgent": "Mozilla/5.0..."
+    }
+  },
+  "metadata": {
+    "source_trigger": {
+      "node_id": "webhook-node-123",
+      "workflow_id": "workflow-456",
+      "event": "App\\Events\\UserRegistered",
+      "timestamp": "2024-01-15T10:30:00Z"
+    }
+  },
+  "timestamp": "2024-01-15T10:30:00Z"
+}
+```
+
 ### 💾 Laravel Eloquent CRUD
 
 Performs Create, Read, Update, and Delete operations on Laravel models.
 
 **Operations:**
+
 - **Create**: Create new records
 - **Get All Records**: Retrieve all records with pagination and filtering
 - **Get Record by ID**: Fetch a specific record by ID
@@ -110,6 +151,7 @@ Performs Create, Read, Update, and Delete operations on Laravel models.
 - **Delete**: Delete records
 
 **Configuration:**
+
 - **Model**: Laravel model class
 - **Operation**: Choose the CRUD operation to perform
 - **Fields**: Define field names and values (for Create/Update)
@@ -120,6 +162,7 @@ Performs Create, Read, Update, and Delete operations on Laravel models.
   - **Order By**: Sort results by multiple fields
 
 **Example Where Conditions:**
+
 ```json
 {
   "conditions": [
@@ -138,6 +181,7 @@ Performs Create, Read, Update, and Delete operations on Laravel models.
 ```
 
 **Example Order By:**
+
 ```json
 {
   "orders": [
@@ -184,40 +228,48 @@ Laravel Eloquent Trigger (Order created)
 ## 🔐 Security
 
 ### Multi-Layer Security Architecture
+
 Our extension implements comprehensive security measures to ensure safe communication:
 
 #### 1. API Key Authentication
+
 - All requests use API key authentication via `X-N8n-Api-Key` header
 - Strong, randomly generated keys during Laravel package setup
 - Support for key rotation and environment-specific keys
 
 #### 2. HMAC Signature Verification
+
 - HMAC-SHA256 signature verification for webhook payloads
 - Timing-safe comparison to prevent timing attacks
 - Configurable per trigger node with `verifyHmac` option
 - Signature sent in `X-Laravel-Signature` header
 
 #### 3. Timestamp Validation (Replay Attack Prevention)
+
 - Validates webhook timestamps to prevent replay attacks
 - Configurable time window (default: 5 minutes)
 - Ensures webhook freshness and prevents captured payload reuse
 
 #### 4. IP Address Restriction
+
 - Optional IP address or CIDR range filtering
 - Supports both single IP and subnet restrictions
 - Configurable per trigger node for granular control
 
 #### 5. Model and Event Validation
+
 - Validates incoming webhooks match configured models and events
 - Prevents unauthorized model access and cross-model data leakage
 - Ensures webhook authenticity and integrity
 
 #### 6. Enhanced Error Handling
+
 - Comprehensive security violation logging
 - Sanitized error messages (no sensitive data exposure)
 - Detailed categorization of authentication and validation errors
 
 ### Security Configuration Example
+
 ```typescript
 // Laravel Eloquent Trigger Node Configuration
 {
@@ -230,6 +282,7 @@ Our extension implements comprehensive security measures to ensure safe communic
 ```
 
 ### Best Practices
+
 - **Always use HTTPS** for all communications in production
 - **Enable HMAC verification** for production environments
 - **Regularly rotate API keys** (recommended: every 90 days)
@@ -239,6 +292,7 @@ Our extension implements comprehensive security measures to ensure safe communic
 - **Use strong secrets** (minimum 32 characters for HMAC)
 
 ### Security Documentation
+
 - [Complete Security Guide](SECURITY.md) - Comprehensive security features and best practices
 - [Testing Guide](TESTING.md) - Security testing procedures and automation
 
@@ -327,4 +381,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Made with ❤️ for the n8n and Laravel communities** 
+**Made with ❤️ for the n8n and Laravel communities**
