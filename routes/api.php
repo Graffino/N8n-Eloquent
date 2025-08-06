@@ -6,6 +6,7 @@ use Shortinc\N8nEloquent\Http\Controllers\WebhookController;
 use Shortinc\N8nEloquent\Http\Controllers\WebhookManagementController;
 use Shortinc\N8nEloquent\Http\Controllers\SubscriptionHealthController;
 use Shortinc\N8nEloquent\Http\Controllers\JobController;
+use Shortinc\N8nEloquent\Http\Controllers\EventController;
 use Shortinc\N8nEloquent\Http\Middleware\AuthenticateN8n;
 use Shortinc\N8nEloquent\Http\Middleware\ValidateHmacSignature;
 use Shortinc\N8nEloquent\Http\Middleware\RateLimitWebhooks;
@@ -55,4 +56,11 @@ Route::prefix($prefix)->middleware(array_merge($middleware, [AuthenticateN8n::cl
     Route::get('/jobs/{job}', [JobController::class, 'show']);
     Route::get('/jobs/{job}/parameters', [JobController::class, 'parameters']);
     Route::post('/jobs/{job}/dispatch', [JobController::class, 'dispatch']);
+    
+    // Event discovery and webhook subscription
+    Route::get('/events', [EventController::class, 'index']);
+    Route::get('/events/search', [EventController::class, 'search']);
+    Route::get('/events/{event}', [EventController::class, 'show']);
+    Route::post('/events/subscribe', [EventController::class, 'subscribe']);
+    Route::delete('/events/unsubscribe', [EventController::class, 'unsubscribe']);
 }); 

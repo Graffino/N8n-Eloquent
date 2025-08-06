@@ -174,6 +174,34 @@ return [
         // Default events to listen for
         'default' => ['created', 'updated', 'deleted'],
         
+        // Event discovery configuration
+        'namespace' => env('N8N_ELOQUENT_EVENTS_NAMESPACE', 'App\\Events'),
+        'directory' => env('N8N_ELOQUENT_EVENTS_DIRECTORY', app_path('Events')),
+        'discovery' => [
+            'mode' => env('N8N_ELOQUENT_EVENTS_DISCOVERY_MODE', 'all'), // 'all', 'whitelist', 'blacklist'
+            'whitelist' => [
+                // Example: 'App\\Events\\UserRegistered',
+                // Example: 'App\\Events\\OrderShipped',
+            ],
+            'blacklist' => [
+                // Example: 'App\\Events\\InternalEvent',
+            ],
+        ],
+        
+        // Event webhook configuration
+        'webhooks' => [
+            'enabled' => env('N8N_ELOQUENT_EVENT_WEBHOOKS_ENABLED', true),
+        ],
+        
+        // Event-specific configuration
+        'config' => [
+            // Example: 'App\\Events\\UserRegistered' => [
+            //     'webhook_enabled' => true,
+            //     'queue_events' => false,
+            //     'queue_name' => 'default',
+            // ],
+        ],
+        
         // Whether to enable property getter/setter events
         'property_events' => [
             'enabled' => env('N8N_ELOQUENT_PROPERTY_EVENTS_ENABLED', true),

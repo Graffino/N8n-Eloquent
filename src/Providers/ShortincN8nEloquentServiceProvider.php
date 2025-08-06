@@ -15,8 +15,10 @@ use Shortinc\N8nEloquent\Events\ModelLifecycleEvent;
 use Shortinc\N8nEloquent\Events\ModelPropertyEvent;
 use Shortinc\N8nEloquent\Listeners\ModelLifecycleListener;
 use Shortinc\N8nEloquent\Listeners\ModelPropertyListener;
+use Shortinc\N8nEloquent\Listeners\EventWebhookListener;
 use Shortinc\N8nEloquent\Observers\ModelObserver;
 use Shortinc\N8nEloquent\Services\ModelDiscoveryService;
+use Shortinc\N8nEloquent\Services\EventDiscoveryService;
 use Shortinc\N8nEloquent\Services\WebhookService;
 use Shortinc\N8nEloquent\Services\SubscriptionRecoveryService;
 
@@ -35,6 +37,10 @@ class ShortincN8nEloquentServiceProvider extends ServiceProvider
 
         $this->app->singleton(ModelDiscoveryService::class, function ($app) {
             return new ModelDiscoveryService($app);
+        });
+
+        $this->app->singleton(EventDiscoveryService::class, function ($app) {
+            return new EventDiscoveryService($app);
         });
 
         $this->app->singleton(WebhookService::class, function ($app) {
@@ -137,5 +143,27 @@ class ShortincN8nEloquentServiceProvider extends ServiceProvider
         // Register the event listeners
         Event::listen(ModelLifecycleEvent::class, ModelLifecycleListener::class);
         Event::listen(ModelPropertyEvent::class, ModelPropertyListener::class);
+        
+        // Register event webhook listener for all discovered events
+        $this->registerEventWebhookListeners();
+    }
+    
+    /**
+     * Register webhook listeners for Laravel events.
+     *
+     * @return void
+     */
+    protected function registerEventWebhookListeners()
+    {
+        // Get the event discovery service
+        $eventDiscoveryService = $this->app->make(EventDiscoveryService::class);
+        
+        // Get all events based on config settings
+        $events = $eventDiscoveryService->getEvents();
+        
+        // Register the EventWebhookListener for each event
+        foreach ($events as $eventClass) {
+            Event::listen($eventClass, EventWebhookListener::class);
+        }
     }
 } 
