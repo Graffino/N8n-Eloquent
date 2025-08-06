@@ -235,6 +235,149 @@ class EventController extends Controller
     }
 
     /**
+     * Get event parameters.
+     *
+     * @param  string  $event
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function parameters(string $event)
+    {
+        try {
+            // URL decode event name
+            $eventClass = urldecode($event);
+            
+            if (!class_exists($eventClass)) {
+                return response()->json([
+                    'error' => "Event class {$eventClass} not found",
+                ], 404);
+            }
+            
+            // Check if event is configured as available
+            if (!$this->eventDiscovery->isEventConfigured($eventClass)) {
+                return response()->json([
+                    'error' => "Event class {$eventClass} is not configured as available",
+                ], 403);
+            }
+            
+            $parameters = $this->eventDiscovery->getEventParameters($eventClass);
+            
+            return response()->json([
+                'parameters' => $parameters,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to get event parameters', [
+                'event' => $event,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            
+            return response()->json([
+                'error' => 'Failed to get event parameters',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Dispatch an event.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  string  $event
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function dispatch(Request $request, string $event)
+    {
+        try {
+            // URL decode event name
+            $eventClass = urldecode($event);
+            
+            if (!class_exists($eventClass)) {
+                return response()->json([
+                    'error' => "Event class {$eventClass} not found",
+                ], 404);
+            }
+            
+            // Check if event is configured as available
+            if (!$this->eventDiscovery->isEventConfigured($eventClass)) {
+                return response()->json([
+                    'error' => "Event class {$eventClass} is not configured as available",
+                ], 403);
+            }
+            
+            // Validate the request data
+            $validator = Validator::make($request->all(), [
+                'metadata' => 'array',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'error' => 'Validation failed',
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
+            
+            // Extract parameters from request body (excluding metadata)
+            $allData = $request->all();
+            $metadata = $request->input('metadata', []);
+            
+            // Remove metadata from parameters
+            unset($allData['metadata']);
+            
+            // The remaining data is the parameters
+            $parameters = $allData;
+            
+            // Debug logging
+            Log::channel(config('n8n-eloquent.logging.channel'))
+                ->info('Event dispatch request received', [
+                    'event_class' => $eventClass,
+                    'parameters' => $parameters,
+                    'metadata' => $metadata,
+                ]);
+            
+            // Add n8n metadata to prevent loops
+            $metadata['is_n8n_dispatched'] = true;
+            $metadata['dispatched_at'] = now()->toISOString();
+            
+            // Store metadata in request context for listeners to access
+            if (!empty($metadata)) {
+                // Store metadata in request attributes for listeners to access
+                $request->attributes->set('n8n_metadata', $metadata);
+                // Also store in session as backup
+                session(['n8n_metadata' => $metadata]);
+            }
+            
+            // Create and dispatch the event
+            $eventInstance = $this->eventDiscovery->createEventInstance($eventClass, $parameters, $metadata);
+            
+            if ($eventInstance) {
+                event($eventInstance);
+                
+                return response()->json([
+                    'message' => 'Event dispatched successfully',
+                    'event_class' => $eventClass,
+                    'dispatched_at' => now()->toISOString(),
+                ]);
+            } else {
+                return response()->json([
+                    'error' => 'Failed to create event instance',
+                ], 500);
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to dispatch event', [
+                'event' => $event,
+                'parameters' => $request->input('parameters'),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            
+            return response()->json([
+                'error' => 'Failed to dispatch event',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * Unsubscribe from event webhooks.
      *
      * @param  \Illuminate\Http\Request  $request

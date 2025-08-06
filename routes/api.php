@@ -61,6 +61,8 @@ Route::prefix($prefix)->middleware(array_merge($middleware, [AuthenticateN8n::cl
     Route::get('/events', [EventController::class, 'index']);
     Route::get('/events/search', [EventController::class, 'search']);
     Route::get('/events/{event}', [EventController::class, 'show']);
+    Route::get('/events/{event}/parameters', [EventController::class, 'parameters']);
+    Route::post('/events/{event}/dispatch', [EventController::class, 'dispatch']);
     Route::post('/events/subscribe', [EventController::class, 'subscribe']);
     Route::delete('/events/unsubscribe', [EventController::class, 'unsubscribe']);
 }); 

@@ -31,17 +31,17 @@ class EventWebhookListener
      * @param  mixed  $event
      * @return void
      */
-    public function handle($event)
+        public function handle($event)
     {
         $eventClass = get_class($event);
-        
+
         // Check if this event should be processed
         if (!$this->shouldProcessEvent($eventClass)) {
             return;
         }
 
-        // Check if this event has n8n metadata to prevent loops
-        if ($this->hasEventN8nMetadata($event)) {
+        // Check if the current operation has n8n metadata to prevent loops
+        if ($this->hasN8nMetadata()) {
             Log::channel(config('n8n-eloquent.logging.channel'))
                 ->info('EventWebhookListener skipped - n8n metadata detected', [
                     'event_class' => $eventClass,
@@ -49,6 +49,13 @@ class EventWebhookListener
                 ]);
             return;
         }
+
+        // Debug: Log event properties to see what we're working with
+        Log::channel(config('n8n-eloquent.logging.channel'))
+            ->debug('EventWebhookListener processing event', [
+                'event_class' => $eventClass,
+                'event_properties' => $this->serializeEvent($event),
+            ]);
 
         try {
             // Debug: Log what we're passing to the webhook service
@@ -128,38 +135,7 @@ class EventWebhookListener
         return $eventData;
     }
 
-    /**
-     * Check if the event has n8n metadata to prevent loops.
-     *
-     * @param  mixed  $event
-     * @return bool
-     */
-    protected function hasEventN8nMetadata($event): bool
-    {
-        // First check request context, attributes, and session (same as ModelObserver)
-        if ($this->hasN8nMetadata()) {
-            return true;
-        }
 
-        // Then check if the event has n8n metadata properties
-        if (is_object($event)) {
-            $reflection = new \ReflectionClass($event);
-            $properties = $reflection->getProperties(\ReflectionProperty::IS_PUBLIC);
-            
-            foreach ($properties as $property) {
-                $propertyName = $property->getName();
-                if (str_contains(strtolower($propertyName), 'n8n') || 
-                    str_contains(strtolower($propertyName), 'metadata')) {
-                    $propertyValue = $property->getValue($event);
-                    if (!empty($propertyValue)) {
-                        return true;
-                    }
-                }
-            }
-        }
-        
-        return false;
-    }
 
     /**
      * Serialize an event for logging.
