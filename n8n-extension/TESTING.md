@@ -4,11 +4,23 @@
 
 This document provides comprehensive testing procedures for the n8n Laravel Eloquent integration, with special focus on security features and edge cases.
 
+## ⚠️ SSL Certificate Validation Testing
+
+**Important**: This extension allows connecting to non-SSL certificated APIs (HTTP) by skipping all certificate validations for development and testing purposes. However, **we strongly recommend against using public non-HTTPS websites in production environments**.
+
+**Testing Considerations**:
+
+- HTTP connections are allowed for development and testing
+- Production environments should always use HTTPS
+- Certificate validation is skipped to allow HTTP connections
+- Security testing should include HTTPS enforcement validation
+
 ## 🧪 Test Categories
 
 ### 1. Authentication Testing
 
 #### API Key Authentication
+
 ```bash
 # Test valid API key
 curl -X GET "https://your-laravel-app.com/api/n8n/models" \
@@ -26,11 +38,13 @@ curl -X GET "https://your-laravel-app.com/api/n8n/models" \
 ```
 
 **Expected Results:**
+
 - Valid key: 200 OK with model data
 - Invalid key: 401 Unauthorized
 - Missing key: 401 Unauthorized
 
 #### HMAC Signature Verification
+
 ```javascript
 // Test HMAC signature generation
 const crypto = require('crypto');
@@ -56,6 +70,7 @@ curl -X POST "https://your-n8n-instance.com/webhook/test" \
 ### 2. Security Feature Testing
 
 #### IP Address Restriction
+
 ```bash
 # Test from allowed IP (configure in trigger node)
 curl -X POST "https://your-n8n-instance.com/webhook/test" \
@@ -69,6 +84,7 @@ curl -X POST "https://your-n8n-instance.com/webhook/test" \
 ```
 
 #### Timestamp Validation
+
 ```javascript
 // Test with current timestamp
 const currentPayload = {
@@ -84,6 +100,7 @@ const oldPayload = {
 ```
 
 #### Model and Event Validation
+
 ```bash
 # Test with correct model and event
 curl -X POST "https://your-n8n-instance.com/webhook/test" \
@@ -104,6 +121,7 @@ curl -X POST "https://your-n8n-instance.com/webhook/test" \
 ### 3. Node Functionality Testing
 
 #### Laravel Eloquent Get Node
+
 ```javascript
 // Test cases for Get node
 const testCases = [
@@ -131,6 +149,7 @@ const testCases = [
 ```
 
 #### Laravel Eloquent Set Node
+
 ```javascript
 // Test cases for Set node
 const testCases = [
@@ -159,6 +178,7 @@ const testCases = [
 ### 4. Error Handling Testing
 
 #### Authentication Errors
+
 ```bash
 # Test expired API key
 curl -X GET "https://your-laravel-app.com/api/n8n/models" \
@@ -172,6 +192,7 @@ curl -X GET "https://your-laravel-app.com/api/n8n/models" \
 ```
 
 #### Validation Errors
+
 ```bash
 # Test invalid model name
 curl -X GET "https://your-laravel-app.com/api/n8n/models/InvalidModel" \
@@ -185,6 +206,7 @@ curl -X GET "https://your-laravel-app.com/api/n8n/models/App%5CModels%5CUser/inv
 ```
 
 #### Network Errors
+
 ```bash
 # Test connection timeout
 curl -X GET "https://unreachable-server.com/api/n8n/models" \
@@ -201,6 +223,7 @@ curl -X GET "https://self-signed-cert.com/api/n8n/models" \
 ## 🔧 Test Environment Setup
 
 ### Laravel Test Environment
+
 ```bash
 # Set up test Laravel application
 composer create-project laravel/laravel laravel-test
@@ -222,6 +245,7 @@ php artisan n8n:setup --env=testing
 ```
 
 ### n8n Test Environment
+
 ```bash
 # Set up n8n test instance
 npm install -g n8n
@@ -234,6 +258,7 @@ n8n start --tunnel
 ```
 
 ### Test Data Setup
+
 ```sql
 -- Create test users
 INSERT INTO users (name, email, created_at, updated_at) VALUES
@@ -249,6 +274,7 @@ INSERT INTO user_counters (total_users, active_users, created_at, updated_at) VA
 ## 📊 Test Automation
 
 ### Jest Test Suite
+
 ```javascript
 // tests/security.test.js
 const crypto = require('crypto');
@@ -289,6 +315,7 @@ describe('Laravel Eloquent Security Tests', () => {
 ```
 
 ### Postman Collection
+
 ```json
 {
   "info": {
@@ -334,6 +361,7 @@ describe('Laravel Eloquent Security Tests', () => {
 ## 🚨 Security Testing Checklist
 
 ### Pre-Production Security Tests
+
 - [ ] API key authentication working correctly
 - [ ] HMAC signature verification functioning
 - [ ] IP address restrictions enforced
@@ -346,6 +374,7 @@ describe('Laravel Eloquent Security Tests', () => {
 - [ ] Logging captures security events
 
 ### Penetration Testing Scenarios
+
 - [ ] Brute force API key attacks
 - [ ] HMAC signature bypass attempts
 - [ ] IP spoofing attempts
@@ -356,6 +385,7 @@ describe('Laravel Eloquent Security Tests', () => {
 - [ ] Man-in-the-middle attack simulations
 
 ### Performance Testing
+
 - [ ] High volume webhook processing
 - [ ] Concurrent request handling
 - [ ] Memory usage under load
@@ -366,6 +396,7 @@ describe('Laravel Eloquent Security Tests', () => {
 ## 📈 Monitoring and Metrics
 
 ### Key Metrics to Track
+
 ```javascript
 // Example monitoring metrics
 const metrics = {
@@ -391,6 +422,7 @@ const metrics = {
 ```
 
 ### Alerting Thresholds
+
 ```yaml
 alerts:
   - metric: "authentication.failed_requests"
@@ -431,6 +463,7 @@ alerts:
    - Adjust time window if needed
 
 ### Debug Mode Configuration
+
 ```javascript
 // Enable debug logging in n8n nodes
 const debugMode = process.env.N8N_DEBUG === 'true';
@@ -446,4 +479,4 @@ if (debugMode) {
 
 ---
 
-**Remember: Regular testing is essential for maintaining security and functionality. Automate tests where possible and include security testing in your CI/CD pipeline.** 
+**Remember: Regular testing is essential for maintaining security and functionality. Automate tests where possible and include security testing in your CI/CD pipeline.**

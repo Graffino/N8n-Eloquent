@@ -1,99 +1,234 @@
 # Laravel Eloquent n8n Webhook Testing Guide
 
-## The Issue
-The webhook registration (`/api/n8n/webhooks/subscribe`) is not being called automatically because **n8n only calls the `webhookCreate()` method when a workflow with a trigger node is properly activated**.
+## 🎯 Overview
 
-## Current Status ✅
-- ✅ Authentication working (model dropdown loads)
-- ✅ Laravel API endpoints working
-- ✅ n8n nodes loading properly
-- ✅ `webhookCreate()` method implemented correctly
-- ❌ **Webhook registration not triggered automatically**
+This guide covers comprehensive testing of the n8n-Eloquent webhook integration, including the enhanced webhook management system, health monitoring, and event-driven webhooks.
 
-## Why Webhook Registration Isn't Happening
+## 🚀 Current Status ✅
 
-The `webhookCreate()` method in the LaravelEloquentTrigger node is only called when:
+- ✅ **Authentication working** (model dropdown loads)
+- ✅ **Laravel API endpoints working** (40+ endpoints available)
+- ✅ **n8n nodes loading properly**
+- ✅ **Enhanced webhook management** (subscription CRUD, health monitoring)
+- ✅ **Event-driven webhooks** (custom event subscriptions)
+- ✅ **Health monitoring system** (analytics, validation, recovery)
+- ✅ **Bulk webhook operations** (manage multiple subscriptions)
 
-1. **A workflow is created** with the LaravelEloquentTrigger node
-2. **All required parameters are configured** (model, events, credentials)
-3. **The workflow is saved and activated** (turned ON)
+## 📋 Available Webhook Endpoints
 
-## Testing Steps
+### Basic Webhook Operations
+
+- `POST /api/n8n/webhooks/subscribe` - Subscribe to model events
+- `DELETE /api/n8n/webhooks/unsubscribe` - Unsubscribe from webhooks
+
+### Enhanced Webhook Management
+
+- `GET /api/n8n/webhooks` - List all webhook subscriptions
+- `GET /api/n8n/webhooks/stats` - Get webhook statistics
+- `POST /api/n8n/webhooks/bulk` - Bulk webhook operations
+- `GET /api/n8n/webhooks/{subscription}` - Get specific subscription
+- `PUT /api/n8n/webhooks/{subscription}` - Update subscription
+- `POST /api/n8n/webhooks/{subscription}/test` - Test webhook delivery
+
+### Health Monitoring
+
+- `GET /api/n8n/health` - Basic health check
+- `GET /api/n8n/health/detailed` - Detailed health status
+- `GET /api/n8n/health/analytics` - Performance analytics
+- `GET /api/n8n/health/validate/{subscription}` - Validate subscription
+- `POST /api/n8n/test-credentials` - Test API credentials
+
+### Event Management
+
+- `GET /api/n8n/events` - Discover available events
+- `POST /api/n8n/events/subscribe` - Subscribe to custom events
+- `DELETE /api/n8n/events/unsubscribe` - Unsubscribe from events
+
+## 🔧 Testing Setup
 
 ### Step 1: Ensure Services Are Running
 
 ```bash
 # Terminal 1: Start Laravel
-cd /Users/Nick/Sites/laravel-n8n-test
+cd /path/to/your/laravel-app
 php artisan serve --port=8002
 
 # Terminal 2: Start n8n
-cd /Users/Nick/Sites/n8n-eloquent
+cd /path/to/n8n-eloquent
 n8n start
 ```
 
 ### Step 2: Create Credentials in n8n
 
-1. Open http://localhost:5678
+1. Open <http://localhost:5678>
 2. Go to **Settings** → **Credentials**
 3. Click **Add Credential**
 4. Select **Laravel Eloquent API**
 5. Configure:
    - **Base URL**: `http://127.0.0.1:8002`
-   - **API Key**: `test-secret-key-for-integration`
-   - **HMAC Secret**: (leave empty for now)
+   - **API Key**: `your-api-secret-key`
+   - **HMAC Secret**: (optional for testing)
 6. Click **Test** - should show ✅ success
 7. **Save** the credential
 
-### Step 3: Create Test Workflow
+## 🧪 Testing Scenarios
+
+### 1. Basic Webhook Registration Testing
+
+#### Create Test Workflow
 
 1. Click **+ Add Workflow**
 2. **Add Node** → Search for "Laravel Eloquent Trigger"
 3. Configure the trigger node:
    - **Credentials**: Select your Laravel API credential
-   - **Model**: Select "User" from dropdown (this should load automatically)
+   - **Model**: Select "User" from dropdown
    - **Events**: Select "Created", "Updated", "Deleted"
-   - **Verify HMAC**: Enable
+   - **Verify HMAC**: Enable (optional for testing)
    - **Expected Source IP**: Leave empty
-4. **Add another node** → Search for "Debug Helper" (to see the webhook data)
-5. **Connect** the Laravel trigger to the Debug Helper
-6. **Save** the workflow with a name like "Laravel User Events"
+4. **Add Debug Helper** node to see webhook data
+5. **Connect** the Laravel trigger to Debug Helper
+6. **Save** and **Activate** the workflow
 
-### Step 4: Activate the Workflow
+#### Expected Console Output
 
-1. Click the **toggle switch** in the top-right to activate the workflow
-2. **Watch the n8n console output** - you should see:
-   ```
-   🔄 Laravel Eloquent webhook registration starting...
-   📋 Registration details: { model: 'App\\Models\\User', events: [...], webhookUrl: '...' }
-   🌐 Making authenticated request to webhook subscription endpoint
-   ✅ Registration response: {...}
-   💾 Stored subscription ID: ...
-   🎉 Laravel Eloquent webhook registered successfully!
-   ```
+```
+🔄 Laravel Eloquent webhook registration starting...
+📋 Registration details: { model: 'App\\Models\\User', events: [...], webhookUrl: '...' }
+🌐 Making authenticated request to webhook subscription endpoint
+✅ Registration response: {...}
+💾 Stored subscription ID: ...
+🎉 Laravel Eloquent webhook registered successfully!
+```
 
-3. **Watch the Laravel console output** - you should see:
-   ```
-   2025-06-02 22:xx:xx /api/n8n/webhooks/subscribe ........................... ~ xxms
-   ```
+### 2. Enhanced Webhook Management Testing
 
-### Step 5: Test the Webhook
+#### Test Webhook Listing
 
-1. **Create a test user** in Laravel:
-   ```bash
-   cd /Users/Nick/Sites/laravel-n8n-test
-   php test_webhook.php
-   ```
+```bash
+# List all webhook subscriptions
+curl -H "X-N8n-Api-Key: your-api-secret-key" \
+     http://127.0.0.1:8002/api/n8n/webhooks
 
-2. **Check n8n executions**:
-   - Go to the **Executions** tab in your workflow
-   - You should see new executions triggered by the Laravel events
+# Get webhook statistics
+curl -H "X-N8n-Api-Key: your-api-secret-key" \
+     http://127.0.0.1:8002/api/n8n/webhooks/stats
+```
 
-3. **Check Laravel Telescope**:
-   - Open http://127.0.0.1:8002/telescope
-   - Look for webhook delivery requests to n8n
+#### Test Webhook Updates
 
-## Expected Webhook Flow
+```bash
+# Update a specific subscription
+curl -X PUT \
+     -H "X-N8n-Api-Key: your-api-secret-key" \
+     -H "Content-Type: application/json" \
+     -d '{"events":["created","updated"],"active":true}' \
+     http://127.0.0.1:8002/api/n8n/webhooks/{subscription-id}
+
+# Test webhook delivery
+curl -X POST \
+     -H "X-N8n-Api-Key: your-api-secret-key" \
+     -H "Content-Type: application/json" \
+     -d '{"test_data":"Hello from test!"}' \
+     http://127.0.0.1:8002/api/n8n/webhooks/{subscription-id}/test
+```
+
+### 3. Health Monitoring Testing
+
+#### Basic Health Check
+
+```bash
+# Quick health status
+curl -H "X-N8n-Api-Key: your-api-secret-key" \
+     http://127.0.0.1:8002/api/n8n/health
+```
+
+#### Detailed Health Analysis
+
+```bash
+# Comprehensive health status
+curl -H "X-N8n-Api-Key: your-api-secret-key" \
+     http://127.0.0.1:8002/api/n8n/health/detailed
+
+# Performance analytics
+curl -H "X-N8n-Api-Key: your-api-secret-key" \
+     http://127.0.0.1:8002/api/n8n/health/analytics
+
+# Validate specific subscription
+curl -H "X-N8n-Api-Key: your-api-secret-key" \
+     http://127.0.0.1:8002/api/n8n/health/validate/{subscription-id}
+```
+
+#### Test Credentials
+
+```bash
+# Verify API credentials
+curl -X POST \
+     -H "X-N8n-Api-Key: your-api-secret-key" \
+     -H "Content-Type: application/json" \
+     http://127.0.0.1:8002/api/n8n/test-credentials
+```
+
+### 4. Event-Driven Webhook Testing
+
+#### Discover Available Events
+
+```bash
+# List all available events
+curl -H "X-N8n-Api-Key: your-api-secret-key" \
+     http://127.0.0.1:8002/api/n8n/events
+
+# Search for specific events
+curl -H "X-N8n-Api-Key: your-api-secret-key" \
+     "http://127.0.0.1:8002/api/n8n/events/search?q=User"
+```
+
+#### Subscribe to Custom Events
+
+```bash
+# Subscribe to a custom event
+curl -X POST \
+     -H "X-N8n-Api-Key: your-api-secret-key" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "event": "App\\Events\\UserRegistered",
+       "webhook_url": "http://localhost:5678/webhook/custom-event",
+       "metadata": {
+         "node_id": "custom-node-123",
+         "workflow_id": "workflow-456"
+       }
+     }' \
+     http://127.0.0.1:8002/api/n8n/events/subscribe
+```
+
+### 5. Bulk Operations Testing
+
+#### Bulk Webhook Management
+
+```bash
+# Bulk subscribe to multiple webhooks
+curl -X POST \
+     -H "X-N8n-Api-Key: your-api-secret-key" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "operations": [
+         {
+           "action": "subscribe",
+           "model": "App\\Models\\User",
+           "events": ["created"],
+           "webhook_url": "http://localhost:5678/webhook/user-created"
+         },
+         {
+           "action": "subscribe", 
+           "model": "App\\Models\\Post",
+           "events": ["created", "updated"],
+           "webhook_url": "http://localhost:5678/webhook/post-events"
+         }
+       ]
+     }' \
+     http://127.0.0.1:8002/api/n8n/webhooks/bulk
+```
+
+## 🔍 Webhook Flow Diagram
 
 ```
 1. User activates n8n workflow
@@ -104,7 +239,7 @@ n8n start
    ↓
 4. Laravel stores webhook subscription in database
    ↓
-5. When User model events occur (create/update/delete)
+5. When model events occur (create/update/delete)
    ↓
 6. Laravel ModelObserver triggers ModelLifecycleEvent
    ↓
@@ -113,66 +248,207 @@ n8n start
 8. WebhookService sends POST to n8n webhook URL
    ↓
 9. n8n receives webhook and executes workflow
+   ↓
+10. Health monitoring tracks delivery success/failure
 ```
 
-## Debugging Tips
+## 🏥 Health Monitoring Features
 
-### If webhook registration fails:
-1. Check n8n console for error messages
-2. Check Laravel logs: `tail -f storage/logs/laravel.log`
-3. Verify credentials are correct
-4. Ensure Laravel server is running on port 8002
+### Health Status Levels
 
-### If webhook delivery fails:
-1. Check Laravel Telescope for failed HTTP requests
-2. Verify n8n webhook URL is accessible
-3. Check HMAC signature validation
-4. Verify model is properly configured in n8n-eloquent.php config
+- **🟢 Healthy** - All subscriptions active, no errors
+- **🟡 Warning** - Some issues detected, but functional
+- **🔴 Critical** - Multiple failures, requires attention
 
-### If no events are triggered:
-1. Check your n8n-eloquent.php configuration:
-   ```php
-   'models' => [
-       'mode' => 'whitelist',
-       'whitelist' => ['App\\Models\\User'],
-       'config' => [
-           'App\\Models\\User' => [
-               'events' => ['created', 'updated', 'deleted']
-           ]
-       ]
-   ]
-   ```
-2. Check if events are properly registered in the service provider
-3. Verify webhook subscription exists in database:
-   ```sql
-   SELECT * FROM webhook_subscriptions;
-   ```
+### Health Metrics Tracked
 
-## Import Test Workflow
+- **Total Subscriptions** - Number of active webhook subscriptions
+- **Active Subscriptions** - Subscriptions with recent successful deliveries
+- **Failed Deliveries** - Subscriptions with recent delivery failures
+- **Stale Subscriptions** - Subscriptions without recent activity
+- **Response Times** - Average webhook delivery response times
+- **Error Rates** - Percentage of failed webhook deliveries
 
-You can import the test workflow from `test-laravel-eloquent-workflow.json`:
+### Health Recommendations
 
-1. In n8n, click **Import from File**
-2. Select the JSON file
-3. Configure credentials
-4. Activate the workflow
+The system provides automatic recommendations based on health metrics:
 
-## Success Indicators
+- **Recovery Actions** - Automatic recovery of failed subscriptions
+- **Performance Optimization** - Suggestions for improving delivery times
+- **Security Alerts** - Notifications about suspicious activity
+- **Maintenance Reminders** - When to review and clean up subscriptions
 
-✅ **Webhook Registration Working**:
+## 🐛 Debugging & Troubleshooting
+
+### Webhook Registration Issues
+
+#### Check n8n Console
+
+Look for detailed error messages in the n8n console output:
+
+```
+❌ Webhook registration failed: Connection refused
+❌ Authentication failed: Invalid API key
+❌ Model not found: App\Models\NonExistentModel
+```
+
+#### Check Laravel Logs
+
+```bash
+tail -f storage/logs/laravel.log | grep n8n
+```
+
+#### Use Health Monitoring
+
+```bash
+# Check overall health
+curl -H "X-N8n-Api-Key: your-api-secret-key" \
+     http://127.0.0.1:8002/api/n8n/health
+
+# Get detailed health information
+curl -H "X-N8n-Api-Key: your-api-secret-key" \
+     http://127.0.0.1:8002/api/n8n/health/detailed
+```
+
+### Webhook Delivery Issues
+
+#### Check Webhook Statistics
+
+```bash
+curl -H "X-N8n-Api-Key: your-api-secret-key" \
+     http://127.0.0.1:8002/api/n8n/webhooks/stats
+```
+
+#### Validate Specific Subscription
+
+```bash
+curl -H "X-N8n-Api-Key: your-api-secret-key" \
+     http://127.0.0.1:8002/api/n8n/health/validate/{subscription-id}
+```
+
+#### Test Webhook Manually
+
+```bash
+curl -X POST \
+     -H "X-N8n-Api-Key: your-api-secret-key" \
+     -H "Content-Type: application/json" \
+     -d '{"test":"payload"}' \
+     http://127.0.0.1:8002/api/n8n/webhooks/{subscription-id}/test
+```
+
+### Common Error Solutions
+
+#### 401 Unauthorized
+
+- Verify API key in Laravel `.env` file
+- Check credentials in n8n match exactly
+- Ensure `X-N8n-Api-Key` header is included
+
+#### 404 Not Found
+
+- Verify Laravel server is running on correct port
+- Check model class exists and is properly configured
+- Ensure URL encoding for class names (e.g., `App%5CModels%5CUser`)
+
+#### 422 Validation Error
+
+- Check required fields in webhook subscription request
+- Verify event names are valid (`created`, `updated`, `deleted`, etc.)
+- Ensure webhook URL is properly formatted
+
+#### 429 Rate Limiting
+
+- Default limit is 60 requests per minute
+- Wait for rate limit window to reset
+- Consider adjusting limits in configuration
+
+#### Connection Refused
+
+- Verify Laravel server is running
+- Check firewall settings
+- Ensure correct port configuration
+
+## 📊 Monitoring & Analytics
+
+### Real-time Monitoring
+
+- **Webhook Delivery Status** - Track success/failure rates
+- **Response Time Analytics** - Monitor performance trends
+- **Error Pattern Analysis** - Identify common failure causes
+- **Subscription Health** - Monitor individual subscription status
+
+### Performance Metrics
+
+- **Average Response Time** - Time from event to webhook delivery
+- **Success Rate** - Percentage of successful webhook deliveries
+- **Error Distribution** - Breakdown of error types and frequencies
+- **Subscription Utilization** - How often each subscription is used
+
+### Alert System
+
+- **Automatic Recovery** - System attempts to recover failed subscriptions
+- **Health Notifications** - Alerts when health status changes
+- **Performance Warnings** - Notifications about slow response times
+- **Security Alerts** - Suspicious activity detection
+
+## 🎯 Success Indicators
+
+### ✅ Webhook Registration Working
+
 - n8n console shows registration success messages
 - Laravel receives `/api/n8n/webhooks/subscribe` request
 - Database has new webhook_subscription record
+- Health check shows subscription as active
 
-✅ **Webhook Delivery Working**:
-- Creating/updating users triggers n8n workflow executions
-- Laravel Telescope shows successful webhook deliveries
+### ✅ Webhook Delivery Working
+
+- Creating/updating models triggers n8n workflow executions
+- Webhook statistics show successful deliveries
+- Health monitoring reports healthy status
 - n8n executions tab shows triggered workflows
 
-## Common Issues
+### ✅ Health Monitoring Working
 
-1. **"Model dropdown empty"** → Authentication issue
-2. **"Webhook registration not called"** → Workflow not activated
-3. **"Connection refused"** → Laravel server not running
-4. **"Unauthorized"** → Wrong API key or credentials
-5. **"No webhook events"** → Model not configured in n8n-eloquent.php config 
+- Health endpoints return detailed status information
+- Analytics provide performance insights
+- Validation endpoints identify issues
+- Recovery system automatically fixes problems
+
+### ✅ Event Management Working
+
+- Custom events can be discovered and subscribed to
+- Event webhooks are delivered successfully
+- Event parameters are properly serialized
+- Event subscriptions can be managed independently
+
+## 🔄 Advanced Testing Workflows
+
+### Complete Integration Test
+
+1. **Setup**: Create n8n workflow with Laravel trigger
+2. **Register**: Activate workflow to register webhook
+3. **Monitor**: Use health endpoints to verify registration
+4. **Test**: Create/update/delete models to trigger events
+5. **Verify**: Check n8n executions and webhook statistics
+6. **Analyze**: Use analytics to review performance
+7. **Cleanup**: Deactivate workflow to unsubscribe
+
+### Event-Driven Workflow Test
+
+1. **Discover**: List available custom events
+2. **Subscribe**: Subscribe to specific events
+3. **Trigger**: Manually dispatch events
+4. **Monitor**: Track event webhook deliveries
+5. **Validate**: Use health monitoring to verify delivery
+6. **Optimize**: Review performance and adjust as needed
+
+### Bulk Operations Test
+
+1. **Setup**: Prepare multiple webhook configurations
+2. **Bulk Subscribe**: Use bulk endpoint to create multiple subscriptions
+3. **Monitor**: Track all subscriptions via health monitoring
+4. **Test**: Trigger events for all subscribed models
+5. **Analyze**: Review bulk delivery performance
+6. **Manage**: Use bulk operations to update or remove subscriptions
+
+Happy testing! 🚀
