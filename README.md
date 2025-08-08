@@ -24,20 +24,19 @@
   - Support for all model lifecycle events (create, update, delete, restore, saving, saved)
   - Targeted property change tracking with configurable field visibility
   - Automatic webhook lifecycle management with health monitoring
-  
+
+- 🎯 **Job & Event System**
+  - Dispatch Laravel jobs from n8n workflows with parameter validation
+  - Listen for and dispatch custom Laravel events
+  - Automatic job/event discovery and registration
+  - Queue management with configurable options
+  - Metadata tracking for workflow context
+
 - 🔐 **Enterprise-Grade Security**
   - Multi-layer security architecture with HMAC-SHA256 signature verification
   - API key authentication with timing-safe comparisons
   - IP whitelisting with CIDR support for webhook sources
   - Timestamp validation to prevent replay attacks
-  - Comprehensive security violation logging with sanitized output
-  - Rate limiting with configurable thresholds
-
-  - **🔭 Laravel Telescope Integration** - Advanced debugging and monitoring dashboard
-  - Comprehensive logging with custom n8n tagging for easy filtering
-  - Postman collection for API testing and development
-  - Automatic model discovery with dynamic field loading
-  - Health monitoring with subscription recovery mechanisms
 
 ### Available Nodes
 
@@ -54,7 +53,14 @@
    - Loop prevention with n8n metadata detection
    - Security settings (HMAC verification, IP filtering, timestamp validation)
 
-3. **Laravel Eloquent CRUD Node** ⭐ **CONSOLIDATED**
+3. **Laravel Event Dispatcher Node** ⭐ **NEW**
+   - Dispatch any Laravel event from n8n workflows
+   - Automatic event discovery and parameter loading
+   - Dynamic parameter validation and type checking
+   - Metadata tracking for workflow context
+   - Security-first approach with configurable options
+
+4. **Laravel Eloquent CRUD Node** ⭐ **CONSOLIDATED**
    - **Unified Operations**: Create, read, update, and delete model records in a single node
    - **Advanced Filtering**: Multiple operators (equals, not equals, greater than, less than, like, in)
    - **Relationship Support**: Include related models with dynamic loading
@@ -62,7 +68,7 @@
    - **Batch Operations**: Support for multiple record operations
    - **Enhanced Error Handling**: Comprehensive validation and error categorization
 
-4. **Laravel Job Dispatcher Node** ⭐ **ENHANCED**
+5. **Laravel Job Dispatcher Node** ⭐ **ENHANCED**
    - Dispatch Laravel jobs from n8n workflows with full parameter validation
    - **Security-First Approach**: Only configured jobs are discoverable and dispatchable
    - **Multiple Dispatch Modes**: Immediate, delayed, and synchronous execution
@@ -78,6 +84,18 @@
 - **Error Recovery**: Robust error handling with automatic retry mechanisms
 - **Performance Optimization**: Efficient request handling with minimal overhead
 - **Scalability**: Designed for high-volume webhook processing with concurrent support
+
+## ⚠️ Security Warning
+
+**SSL Certificate Validation**: This package allows connecting to non-SSL certificated APIs (HTTP) by skipping all certificate validations for development and testing purposes. However, **we strongly recommend against using public non-HTTPS websites in production environments**.
+
+**Security Best Practices**:
+
+- Always use HTTPS in production environments
+- Ensure your Laravel application and n8n instance communicate over secure connections
+- Regularly update your SSL certificates
+- Consider using a reverse proxy (like nginx) with proper SSL termination
+- Monitor your webhook endpoints for any suspicious activity
 
 ## 📦 Installation
 
@@ -133,6 +151,48 @@ class User extends Model
 User::create(['name' => 'Test User']); // Will trigger n8n workflow
 ```
 
+### Event Listener Quick Start
+
+1. Create a custom Laravel event:
+
+```php
+use Shortinc\N8nEloquent\Events\BaseEvent;
+
+class UserRegistered extends BaseEvent
+{
+    public $user;
+    
+    public function __construct($user)
+    {
+        $this->user = $user;
+    }
+}
+```
+
+2. Create a workflow in n8n:
+   - Add the "Laravel Event Listener" node
+   - Select your custom event
+   - Configure security settings
+   - Connect to other nodes
+   - Activate the workflow
+
+3. Dispatch the event from Laravel:
+
+```php
+event(new UserRegistered($user)); // Will trigger n8n workflow
+```
+
+### Event Dispatcher Quick Start
+
+1. Create a workflow in n8n:
+   - Add the "Laravel Event Dispatcher" node
+   - Select from available Laravel events
+   - Configure event parameters
+   - Connect to other nodes
+   - Activate the workflow
+
+2. Dispatch events from n8n workflows with full parameter validation and metadata tracking.
+
 ### Job Dispatcher Quick Start
 
 1. Configure available jobs in `config/n8n-eloquent.php`:
@@ -165,14 +225,6 @@ User::create(['name' => 'Test User']); // Will trigger n8n workflow
 
 ## 🗺️ Roadmap
 
-### Coming Soon (Q3 2025)
-
-1. **Laravel Event Dispatcher Node**
-   - Dispatch any Laravel event
-   - Support for broadcasting
-   - Event payload builder
-   - Practical examples: welcome emails, admin notifications, system logging
-
 ### Future Plans (Q4 2025)
 
 1. **Laravel Cache Node**
@@ -189,6 +241,15 @@ User::create(['name' => 'Test User']); // Will trigger n8n workflow
    - Send Laravel notifications through multiple channels
    - Template system with dynamic content
    - Practical examples: multi-channel alerts, marketing communications, appointment reminders
+  
+4. **🔭 Laravel Telescope Integration**
+   - Advanced debugging and monitoring dashboard with n8n-specific panels
+   - Real-time request tracking and performance profiling
+   - Custom n8n tagging for easy log filtering and analysis
+   - Detailed webhook and job execution monitoring
+   - Automatic model discovery with dynamic field loading
+   - Health monitoring with subscription recovery mechanisms
+   - Integration with Laravel's error tracking and reporting
 
 ### Under Consideration
 
