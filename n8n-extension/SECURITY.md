@@ -4,6 +4,23 @@
 
 This document outlines the security features and best practices for the n8n Laravel Eloquent integration. The extension implements multiple layers of security to ensure safe communication between n8n and Laravel applications.
 
+## ⚠️ SSL Certificate Validation Warning
+
+**Important Security Notice**: This extension allows connecting to non-SSL certificated APIs (HTTP) by skipping all certificate validations for development and testing purposes. However, **we strongly recommend against using public non-HTTPS websites in production environments**.
+
+**Security Implications**:
+- HTTP connections are vulnerable to man-in-the-middle attacks
+- Data transmitted over HTTP is not encrypted
+- Credentials and sensitive information may be exposed
+- Compliance requirements often mandate HTTPS usage
+
+**Recommended Actions**:
+- Always use HTTPS in production environments
+- Ensure your Laravel application and n8n instance communicate over secure connections
+- Regularly update your SSL certificates
+- Consider using a reverse proxy (like nginx) with proper SSL termination
+- Monitor your webhook endpoints for any suspicious activity
+
 ## 🔐 Security Features
 
 ### 1. API Key Authentication

@@ -15,6 +15,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Enhanced Filtering**: Added advanced filtering and sorting capabilities to the CRUD node
 - **Better Pagination**: Improved pagination support with limit and offset parameters
 
+### ⚠️ Security Notice
+
+#### SSL Certificate Validation
+- **HTTP Connection Support**: Added support for connecting to non-SSL certificated APIs (HTTP) by skipping certificate validations for development and testing purposes
+- **Production Security Warning**: Strongly recommend against using public non-HTTPS websites in production environments
+- **Security Best Practices**: Updated documentation to emphasize HTTPS usage in production and proper SSL certificate management
+
 ### 🗑️ Removed
 - **Laravel Eloquent Get Node**: Functionality moved to CRUD node
 - **Laravel Eloquent Set Node**: Functionality moved to CRUD node
