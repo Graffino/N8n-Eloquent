@@ -108,12 +108,12 @@ export class LaravelJobDispatcher implements INodeType {
 								name: 'parameterValue',
 								type: 'string',
 								default: '',
-								description: 'Value of the job parameter',
+								description: 'Value of the job parameter (supports both strings and JSON objects)',
 							},
 						],
 					},
 				],
-				description: 'Parameters to pass to the job',
+				description: 'Parameters to pass to the job (supports both strings and JSON objects)',
 			},
 			// Queue selection
 			{
@@ -325,7 +325,21 @@ export class LaravelJobDispatcher implements INodeType {
 			console.log('🔧 Job Dispatcher Node - Raw parameters:', parameters);
 			
 			for (const param of parameters) {
-				jobData[param.parameterName as string] = param.parameterValue;
+				const paramName = param.parameterName as string;
+				let paramValue = param.parameterValue;
+				
+				// Handle JSON objects - if it's a string that looks like JSON, parse it
+				if (typeof paramValue === 'string' && (paramValue.startsWith('{') || paramValue.startsWith('['))) {
+					try {
+						paramValue = JSON.parse(paramValue);
+						console.log(`🔧 Job Dispatcher Node - Parsed JSON for parameter ${paramName}:`, paramValue);
+					} catch (error) {
+						console.warn(`🔧 Job Dispatcher Node - Failed to parse JSON for parameter ${paramName}:`, error);
+						// Keep as string if parsing fails
+					}
+				}
+				
+				jobData[paramName] = paramValue;
 			}
 			
 			console.log('🔧 Job Dispatcher Node - Processed job data:', jobData);

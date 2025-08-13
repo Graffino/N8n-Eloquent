@@ -19,6 +19,7 @@ use Shortinc\N8nEloquent\Listeners\EventWebhookListener;
 use Shortinc\N8nEloquent\Observers\ModelObserver;
 use Shortinc\N8nEloquent\Services\ModelDiscoveryService;
 use Shortinc\N8nEloquent\Services\EventDiscoveryService;
+use Shortinc\N8nEloquent\Services\JobDiscoveryService;
 use Shortinc\N8nEloquent\Services\WebhookService;
 use Shortinc\N8nEloquent\Services\SubscriptionRecoveryService;
 
@@ -41,6 +42,10 @@ class ShortincN8nEloquentServiceProvider extends ServiceProvider
 
         $this->app->singleton(EventDiscoveryService::class, function ($app) {
             return new EventDiscoveryService($app);
+        });
+
+        $this->app->singleton(JobDiscoveryService::class, function ($app) {
+            return new JobDiscoveryService($app);
         });
 
         $this->app->singleton(WebhookService::class, function ($app) {
