@@ -2,5 +2,5 @@
 
 return [
     App\Providers\AppServiceProvider::class,
-    N8n\Eloquent\Providers\N8nEloquentServiceProvider::class,
+    Shortinc\N8nEloquent\Providers\ShortincN8nEloquentServiceProvider::class,
 ]; 
