@@ -319,13 +319,9 @@ export class LaravelEloquentCrud implements INodeType {
 		loadOptions: {
 			// Load available models from Laravel API
 			async getModels(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
-				console.log('📋 getModels() called - Loading model options');
 				try {
 					const credentials = await this.getCredentials('laravelEloquentApi');
 					const baseUrl = credentials.baseUrl as string;
-					
-					console.log('🔑 Using credentials with baseUrl:', baseUrl);
-					console.log('🌐 Making request to /api/n8n/models');
 					
 					const response = await this.helpers.httpRequestWithAuthentication.call(this, 'laravelEloquentApi', {
 						method: 'GET',
@@ -334,41 +330,33 @@ export class LaravelEloquentCrud implements INodeType {
 						skipSslCertificateValidation: true,
 					});
 
-					console.log('✅ Models response:', response);
-
 					const models = response.models.map((model: any) => ({
 						name: model.name.split('\\').pop(),
 						value: model.class,
 						description: `Full class: ${model.class}`,
 					}));
-					
-					console.log('📋 Returning models:', models);
+
 					return models;
 				} catch (error) {
 					console.error('❌ Failed to load models:', error);
+					
 					throw new NodeOperationError(this.getNode(), `Failed to load models: ${(error as Error).message}`);
 				}
 			},
 			// Add new getFields method
 			async getFields(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
-				console.log('📋 getFields() called - Loading field options');
 				try {
 					const credentials = await this.getCredentials('laravelEloquentApi');
 					const baseUrl = credentials.baseUrl as string;
 					const model = this.getNodeParameter('model') as string;
 
 					if (!model) {
-						console.error('❌ No model selected');
 						throw new NodeOperationError(this.getNode(), 'Please select a model first');
 					}
-
-					console.log('🔑 Using credentials with baseUrl:', baseUrl);
-					console.log('🌐 Making request to get fields for model:', model);
 					
 					// Encode the model name properly for the URL
 					const encodedModel = encodeURIComponent(model);
 					const url = `${baseUrl}/api/n8n/models/${encodedModel}/fields`;
-					console.log('🔗 Request URL:', url);
 
 					try {
 						const response = await this.helpers.httpRequestWithAuthentication.call(this, 'laravelEloquentApi', {
@@ -378,10 +366,7 @@ export class LaravelEloquentCrud implements INodeType {
 							skipSslCertificateValidation: true,
 						});
 
-						console.log('✅ Fields response:', response);
-
 						if (!response.fields || !Array.isArray(response.fields)) {
-							console.error('❌ Invalid response format:', response);
 							throw new NodeOperationError(
 								this.getNode(),
 								'Invalid response format from API. Expected fields array.'
@@ -394,7 +379,7 @@ export class LaravelEloquentCrud implements INodeType {
 							description: `Type: ${field.type}${field.nullable ? ' (nullable)' : ''}`,
 						}));
 					} catch (httpError: any) {
-						console.error('❌ HTTP request failed:', {
+						console.error('❌ Failed to load fields:', {
 							status: httpError.response?.status,
 							statusText: httpError.response?.statusText,
 							data: httpError.response?.data,
@@ -412,6 +397,7 @@ export class LaravelEloquentCrud implements INodeType {
 					}
 				} catch (error: any) {
 					console.error('❌ Failed to load fields:', error);
+					
 					throw error;
 				}
 			},
@@ -441,9 +427,6 @@ export class LaravelEloquentCrud implements INodeType {
 			source_trigger: (items[0].json as IItemMetadata)?.metadata?.source_trigger,
 		};
 		
-		console.log('🔧 CRUD Node - Extracted source_trigger:', (items[0].json as IItemMetadata)?.metadata?.source_trigger);
-		console.log('🔧 CRUD Node - Final metadata:', metadata);
-
 		try {
 			let responseData: IDataObject | IDataObject[] = [];
 			
@@ -462,8 +445,6 @@ export class LaravelEloquentCrud implements INodeType {
 					// Add metadata to the request
 					data.metadata = metadata;
 					
-					console.log('🔧 CRUD Node - Sending metadata for create:', metadata);
-
 					const options: IHttpRequestOptions = {
 						method: 'POST' as IHttpRequestMethods,
 						url: modelApiUrl,
@@ -521,8 +502,6 @@ export class LaravelEloquentCrud implements INodeType {
 					// Add metadata to the request
 					data.metadata = metadata;
 					
-					console.log('🔧 CRUD Node - Sending metadata for update:', metadata);
-
 					const options: IHttpRequestOptions = {
 						method: 'PUT' as IHttpRequestMethods,
 						url: `${modelApiUrl}/${recordId}`,
@@ -562,6 +541,8 @@ export class LaravelEloquentCrud implements INodeType {
 
 			return [returnData];
 		} catch (error: any) {
+			console.error('❌ Error processing CRUD operation:', error);
+			
 			if (error.response) {
 				throw new NodeOperationError(this.getNode(), `API Error: ${error.response.data?.error || error.message}`, {
 					description: error.response.data?.message || 'Unknown API error',
