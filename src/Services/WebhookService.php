@@ -39,8 +39,8 @@ class WebhookService
         array $metadata = []
     ): array {
         // Check if a subscription already exists for this exact webhook URL
+        // We only match by webhook_url because that's what uniquely identifies an n8n node
         $existingSubscription = WebhookSubscription::where('webhook_url', $webhookUrl)
-            ->where('model_class', $modelClass)
             ->first();
 
         if ($existingSubscription) {
@@ -452,9 +452,9 @@ class WebhookService
         string $webhookUrl,
         array $metadata = []
     ): array {
-        // Check if a subscription already exists for this exact webhook URL and event
+        // Check if a subscription already exists for this exact webhook URL
+        // We only match by webhook_url because that's what uniquely identifies an n8n node
         $existingSubscription = WebhookSubscription::where('webhook_url', $webhookUrl)
-            ->where('model_class', $eventClass)
             ->where('is_event_subscription', true)
             ->first();
 
