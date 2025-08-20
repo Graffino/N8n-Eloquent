@@ -190,13 +190,9 @@ export class LaravelJobDispatcher implements INodeType {
 		loadOptions: {
 			// Load available jobs from Laravel API
 			async getJobs(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
-				console.log('📋 getJobs() called - Loading job options');
 				try {
 					const credentials = await this.getCredentials('laravelEloquentApi');
 					const baseUrl = credentials.baseUrl as string;
-					
-					console.log('🔑 Using credentials with baseUrl:', baseUrl);
-					console.log('🌐 Making request to /api/n8n/jobs');
 					
 					const response = await this.helpers.httpRequestWithAuthentication.call(this, 'laravelEloquentApi', {
 						method: 'GET',
@@ -205,41 +201,33 @@ export class LaravelJobDispatcher implements INodeType {
 						skipSslCertificateValidation: true,
 					});
 
-					console.log('✅ Jobs response:', response);
-
 					const jobs = response.jobs.map((job: any) => ({
 						name: job.name.split('\\').pop(),
 						value: job.class,
 						description: `Full class: ${job.class}`,
 					}));
-					
-					console.log('📋 Returning jobs:', jobs);
+
 					return jobs;
 				} catch (error) {
 					console.error('❌ Failed to load jobs:', error);
+					
 					throw new NodeOperationError(this.getNode(), `Failed to load jobs: ${(error as Error).message}`);
 				}
 			},
 			// Load job parameters
 			async getJobParameters(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
-				console.log('📋 getJobParameters() called - Loading job parameter options');
 				try {
 					const credentials = await this.getCredentials('laravelEloquentApi');
 					const baseUrl = credentials.baseUrl as string;
 					const job = this.getNodeParameter('job') as string;
 
 					if (!job) {
-						console.error('❌ No job selected');
 						throw new NodeOperationError(this.getNode(), 'Please select a job first');
 					}
 
-					console.log('🔑 Using credentials with baseUrl:', baseUrl);
-					console.log('🌐 Making request to get parameters for job:', job);
-					
 					// Encode the job name properly for the URL
 					const encodedJob = encodeURIComponent(job);
 					const url = `${baseUrl}/api/n8n/jobs/${encodedJob}/parameters`;
-					console.log('🔗 Request URL:', url);
 
 					try {
 						const response = await this.helpers.httpRequestWithAuthentication.call(this, 'laravelEloquentApi', {
@@ -249,10 +237,7 @@ export class LaravelJobDispatcher implements INodeType {
 							skipSslCertificateValidation: true,
 						});
 
-						console.log('✅ Job parameters response:', response);
-
 						if (!response.parameters || !Array.isArray(response.parameters)) {
-							console.error('❌ Invalid response format:', response);
 							throw new NodeOperationError(
 								this.getNode(),
 								'Invalid response format from API. Expected parameters array.'
@@ -265,7 +250,7 @@ export class LaravelJobDispatcher implements INodeType {
 							description: `Type: ${param.type}${param.required ? ' (required)' : ''}`,
 						}));
 					} catch (httpError: any) {
-						console.error('❌ HTTP request failed:', {
+						console.error('❌ Failed to load job parameters:', {
 							status: httpError.response?.status,
 							statusText: httpError.response?.statusText,
 							data: httpError.response?.data,
@@ -283,6 +268,7 @@ export class LaravelJobDispatcher implements INodeType {
 					}
 				} catch (error: any) {
 					console.error('❌ Failed to load job parameters:', error);
+					
 					throw error;
 				}
 			},
@@ -309,8 +295,6 @@ export class LaravelJobDispatcher implements INodeType {
 			execution_id: executionId,
 			is_n8n_job_dispatch: true,
 		};
-		
-		console.log('🔧 Job Dispatcher Node - Final metadata:', metadata);
 
 		try {
 			let responseData: IDataObject = {};
@@ -322,8 +306,6 @@ export class LaravelJobDispatcher implements INodeType {
 			const parameters = this.getNodeParameter('parameters.parameterValues', 0, []) as IDataObject[];
 			const jobData: IDataObject = {};
 			
-			console.log('🔧 Job Dispatcher Node - Raw parameters:', parameters);
-			
 			for (const param of parameters) {
 				const paramName = param.parameterName as string;
 				let paramValue = param.parameterValue;
@@ -332,9 +314,8 @@ export class LaravelJobDispatcher implements INodeType {
 				if (typeof paramValue === 'string' && (paramValue.startsWith('{') || paramValue.startsWith('['))) {
 					try {
 						paramValue = JSON.parse(paramValue);
-						console.log(`🔧 Job Dispatcher Node - Parsed JSON for parameter ${paramName}:`, paramValue);
 					} catch (error) {
-						console.warn(`🔧 Job Dispatcher Node - Failed to parse JSON for parameter ${paramName}:`, error);
+						console.error('❌ Failed to parse JSON for parameter:', error);
 						// Keep as string if parsing fails
 					}
 				}
@@ -342,8 +323,6 @@ export class LaravelJobDispatcher implements INodeType {
 				jobData[paramName] = paramValue;
 			}
 			
-			console.log('🔧 Job Dispatcher Node - Processed job data:', jobData);
-
 			// Add metadata to the request
 			jobData.metadata = metadata;
 			
@@ -363,8 +342,6 @@ export class LaravelJobDispatcher implements INodeType {
 				requestData.delay = delay;
 			}
 
-			console.log('🔧 Job Dispatcher Node - Sending job data:', requestData);
-
 			const options: IHttpRequestOptions = {
 				method: 'POST' as IHttpRequestMethods,
 				url: jobApiUrl,
@@ -379,6 +356,8 @@ export class LaravelJobDispatcher implements INodeType {
 
 			return [returnData];
 		} catch (error: any) {
+			console.error('❌ Error processing job dispatch:', error);
+
 			if (error.response) {
 				throw new NodeOperationError(this.getNode(), `API Error: ${error.response.data?.error || error.message}`, {
 					description: error.response.data?.message || 'Unknown API error',

@@ -5,7 +5,6 @@ namespace Shortinc\N8nEloquent\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\App;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Shortinc\N8nEloquent\Services\ModelDiscoveryService;
 
@@ -148,12 +147,6 @@ class ModelController extends Controller
                 ],
             ]);
         } catch (\Throwable $e) {
-            Log::channel(config('n8n-eloquent.logging.channel'))
-                ->error("Error fetching fields for model {$modelClass}", [
-                    'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString(),
-                ]);
-                
             return response()->json([
                 'error' => "Error fetching fields: {$e->getMessage()}",
             ], 500);
@@ -206,12 +199,6 @@ class ModelController extends Controller
                 ],
             ]);
         } catch (\Throwable $e) {
-            Log::channel(config('n8n-eloquent.logging.channel'))
-                ->error("Error fetching relationships for model {$modelClass}", [
-                    'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString(),
-                ]);
-                
             return response()->json([
                 'error' => "Error fetching relationships: {$e->getMessage()}",
             ], 500);
@@ -295,12 +282,6 @@ class ModelController extends Controller
                 ],
             ]);
         } catch (\Throwable $e) {
-            Log::channel(config('n8n-eloquent.logging.channel'))
-                ->error("Error searching models", [
-                    'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString(),
-                ]);
-                
             return response()->json([
                 'error' => "Error searching models: {$e->getMessage()}",
             ], 500);
@@ -338,12 +319,6 @@ class ModelController extends Controller
                 ],
             ]);
         } catch (\Throwable $e) {
-            Log::channel(config('n8n-eloquent.logging.channel'))
-                ->error("Error fetching field dependencies for {$modelClass}::{$field}", [
-                    'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString(),
-                ]);
-                
             return response()->json([
                 'error' => "Error fetching field dependencies: {$e->getMessage()}",
             ], 500);
@@ -379,12 +354,6 @@ class ModelController extends Controller
                 ],
             ]);
         } catch (\Throwable $e) {
-            Log::channel(config('n8n-eloquent.logging.channel'))
-                ->error("Error fetching validation rules for model {$modelClass}", [
-                    'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString(),
-                ]);
-                
             return response()->json([
                 'error' => "Error fetching validation rules: {$e->getMessage()}",
             ], 500);
@@ -450,12 +419,6 @@ class ModelController extends Controller
                 ],
             ]);
         } catch (\Throwable $e) {
-            Log::channel(config('n8n-eloquent.logging.channel'))
-                ->error("Error fetching records for model {$modelClass}", [
-                    'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString(),
-                ]);
-                
             return response()->json([
                 'error' => "Error fetching records: {$e->getMessage()}",
             ], 500);
@@ -499,12 +462,6 @@ class ModelController extends Controller
                 'data' => $record,
             ]);
         } catch (\Throwable $e) {
-            Log::channel(config('n8n-eloquent.logging.channel'))
-                ->error("Error fetching record {$id} for model {$modelClass}", [
-                    'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString(),
-                ]);
-                
             return response()->json([
                 'error' => "Error fetching record: {$e->getMessage()}",
             ], 500);
@@ -593,13 +550,6 @@ class ModelController extends Controller
             // Extract metadata from request for loop detection
             $metadata = $request->input('metadata', []);
             
-            // Debug: Log the metadata received
-            \Log::channel(config('n8n-eloquent.logging.channel'))
-                ->info('CRUD request metadata received', [
-                    'metadata' => $metadata,
-                    'request_all' => $request->all(),
-                ]);
-            
             // Store metadata in request context for observers to access
             if (!empty($metadata)) {
                 // Store metadata in request attributes for observers to access
@@ -616,12 +566,6 @@ class ModelController extends Controller
                 'message' => 'Record created successfully',
             ], 201);
         } catch (\Throwable $e) {
-            Log::channel(config('n8n-eloquent.logging.channel'))
-                ->error("Error creating record for model {$modelClass}", [
-                    'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString(),
-                ]);
-                
             return response()->json([
                 'error' => "Error creating record: {$e->getMessage()}",
             ], 500);
@@ -717,13 +661,6 @@ class ModelController extends Controller
             // Extract metadata from request for loop detection
             $metadata = $request->input('metadata', []);
             
-            // Debug: Log the metadata received
-            \Log::channel(config('n8n-eloquent.logging.channel'))
-                ->info('CRUD update request metadata received', [
-                    'metadata' => $metadata,
-                    'request_all' => $request->all(),
-                ]);
-            
             // Store metadata in request context for observers to access
             if (!empty($metadata)) {
                 // Store metadata in request attributes for observers to access
@@ -740,12 +677,6 @@ class ModelController extends Controller
                 'message' => 'Record updated successfully',
             ]);
         } catch (\Throwable $e) {
-            Log::channel(config('n8n-eloquent.logging.channel'))
-                ->error("Error updating record {$id} for model {$modelClass}", [
-                    'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString(),
-                ]);
-                
             return response()->json([
                 'error' => "Error updating record: {$e->getMessage()}",
             ], 500);
@@ -792,12 +723,6 @@ class ModelController extends Controller
                 'message' => 'Record deleted successfully',
             ]);
         } catch (\Throwable $e) {
-            Log::channel(config('n8n-eloquent.logging.channel'))
-                ->error("Error deleting record {$id} for model {$modelClass}", [
-                    'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString(),
-                ]);
-                
             return response()->json([
                 'error' => "Error deleting record: {$e->getMessage()}",
             ], 500);

@@ -151,13 +151,9 @@ export class LaravelEloquentTrigger implements INodeType {
 	methods = {
 		loadOptions: {
 			async getModels(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
-				console.log('📋 getModels() called - Loading model options');
 				try {
 					const credentials = await this.getCredentials('laravelEloquentApi');
 					const baseUrl = credentials.baseUrl as string;
-					
-					console.log('🔑 Using credentials with baseUrl:', baseUrl);
-					console.log('🌐 Making request to /api/n8n/models');
 					
 					const response = await this.helpers.httpRequestWithAuthentication.call(this, 'laravelEloquentApi', {
 						method: 'GET',
@@ -166,18 +162,16 @@ export class LaravelEloquentTrigger implements INodeType {
 						skipSslCertificateValidation: true,
 					});
 
-					console.log('✅ Models response:', response);
-
 					const models = response.models.map((model: any) => ({
 						name: model.name.split('\\').pop(),
 						value: model.class,
 						description: `Full class: ${model.class}`,
 					}));
 					
-					console.log('📋 Returning models:', models);
 					return models;
 				} catch (error) {
 					console.error('❌ Failed to load models:', error);
+					
 					throw new NodeOperationError(this.getNode(), `Failed to load models: ${(error as Error).message}`);
 				}
 			},
@@ -190,22 +184,12 @@ export class LaravelEloquentTrigger implements INodeType {
 			async checkExists(this: IHookFunctions): Promise<boolean> {
 				// This method is called when the workflow is activated
 				// Return false to indicate we don't have existing data to process
-				console.log('🔍 webhookMethods.checkExists() called');
-				console.log('🔍 Node ID:', this.getNode().id);
-				console.log('🔍 Workflow ID:', this.getWorkflow().id);
 				return false;
 			},
 
 			async create(this: IHookFunctions): Promise<boolean> {
 				// This method is called when the workflow is activated or saved
 				// It should register the webhook with the Laravel application
-				
-				console.log('🚀 webhookMethods.create() called - WEBHOOK REGISTRATION STARTING');
-				console.log('🔍 Node context:', {
-					nodeId: this.getNode().id,
-					nodeName: this.getNode().name,
-					workflowId: this.getWorkflow().id,
-				});
 				
 				try {
 					const model = this.getNodeParameter('model') as string;
@@ -228,17 +212,6 @@ export class LaravelEloquentTrigger implements INodeType {
 					const credentials = await this.getCredentials('laravelEloquentApi');
 					const baseUrl = credentials.baseUrl as string;
 					
-					console.log('📋 Webhook registration details:', {
-						model,
-						events,
-						webhookUrl,
-						verifyHmac,
-						requireTimestamp,
-						expectedSourceIp: expectedSourceIp || 'none',
-					});
-					
-					console.log('🌐 Making authenticated request to webhook subscription endpoint');
-					
 					const requestBody = {
 						model,
 						events,
@@ -250,8 +223,6 @@ export class LaravelEloquentTrigger implements INodeType {
 						expected_source_ip: expectedSourceIp || null,
 					};
 					
-					console.log('📦 Request body:', requestBody);
-					
 					const response = await this.helpers.httpRequestWithAuthentication.call(this, 'laravelEloquentApi', {
 						method: 'POST',
 						url: `${baseUrl}/api/n8n/webhooks/subscribe`,
@@ -260,18 +231,16 @@ export class LaravelEloquentTrigger implements INodeType {
 						skipSslCertificateValidation: true,
 					});
 					
-					console.log('✅ Webhook registration successful:', response);
-					
 					// Store the subscription ID for later deletion
 					if (response.subscription && response.subscription.id) {
 						const webhookData = this.getWorkflowStaticData('node');
 						webhookData.subscriptionId = response.subscription.id;
-						console.log('💾 Stored subscription ID:', response.subscription.id);
 					}
 					
 					return true;
 				} catch (error) {
-					console.error('❌ Webhook registration failed:', error);
+					console.error('❌ Failed to register webhook:', error);
+					
 					throw new NodeOperationError(this.getNode(), `Failed to register webhook: ${(error as Error).message}`);
 				}
 			},
@@ -280,26 +249,16 @@ export class LaravelEloquentTrigger implements INodeType {
 				// This method is called when the workflow is deactivated or the node is deleted
 				// It should unregister the webhook from the Laravel application
 				
-				console.log('🗑️ webhookMethods.delete() called - WEBHOOK UNREGISTRATION STARTING');
-				console.log('🔍 Node ID:', this.getNode().id);
-				console.log('🔍 Workflow ID:', this.getWorkflow().id);
-				
 				const webhookData = this.getWorkflowStaticData('node');
 				
 				// Check if we have a subscription ID to delete
 				if (!webhookData.subscriptionId) {
-					console.log('⚠️ No subscription ID found, skipping webhook deletion');
 					return true;
 				}
-
-				console.log('🔍 Found subscription ID to delete:', webhookData.subscriptionId);
 
 				try {
 					const credentials = await this.getCredentials('laravelEloquentApi');
 					const baseUrl = credentials.baseUrl as string;
-					
-					console.log('🌐 Making authenticated request to webhook unsubscription endpoint');
-					console.log('📦 Request body:', { subscription_id: webhookData.subscriptionId });
 					
 					await this.helpers.httpRequestWithAuthentication.call(this, 'laravelEloquentApi', {
 						method: 'DELETE',
@@ -314,10 +273,10 @@ export class LaravelEloquentTrigger implements INodeType {
 					// Clear the subscription ID
 					delete webhookData.subscriptionId;
 					
-					console.log('✅ Laravel Eloquent webhook unregistered successfully');
 					return true;
 				} catch (error) {
-					console.error('❌ Failed to unregister Laravel Eloquent webhook:', error);
+					console.error('❌ Failed to unregister webhook:', error);
+					
 					// Don't throw error here as it might prevent workflow deactivation
 					return true;
 				}
@@ -326,8 +285,6 @@ export class LaravelEloquentTrigger implements INodeType {
 	};
 
 	async webhook(this: IWebhookFunctions): Promise<IWebhookResponseData> {
-		console.log('🔔 webhook() called - Processing incoming webhook data');
-		
 		try {
 			const body = this.getBodyData() as IDataObject;
 			const headers = this.getHeaderData() as IDataObject;
@@ -337,17 +294,11 @@ export class LaravelEloquentTrigger implements INodeType {
 				? this.getRequestObject().body 
 				: JSON.stringify(this.getRequestObject().body);
 			
-			console.log('📦 Received webhook body:', body);
-			console.log('📋 Received webhook headers:', headers);
-			console.log('📄 Raw body type:', typeof this.getRequestObject().body);
-			console.log('📄 Raw body for HMAC verification:', rawBody);
-			
 			// Get stored node parameters
 			const webhookData = this.getWorkflowStaticData('node');
 			const nodeParameters = webhookData.nodeParameters as INodeParameters;
 			
 			if (!nodeParameters) {
-				console.error('❌ No node parameters found in webhook data');
 				throw new NodeOperationError(this.getNode(), 'No node parameters found for webhook processing');
 			}
 			
@@ -358,7 +309,6 @@ export class LaravelEloquentTrigger implements INodeType {
 				const hmacSecret = credentials.hmacSecret as string;
 				
 				if (!signature || !hmacSecret) {
-					console.error('❌ Missing HMAC signature or HMAC secret');
 					throw new NodeOperationError(this.getNode(), 'Missing HMAC signature or HMAC secret for verification');
 				}
 				
@@ -369,21 +319,14 @@ export class LaravelEloquentTrigger implements INodeType {
 				
 				// Use timing-safe comparison
 				if (!timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature))) {
-					console.error('❌ HMAC signature verification failed');
-					console.error('Expected signature:', expectedSignature);
-					console.error('Received signature:', signature);
-					console.error('Raw body used for verification:', rawBody);
 					throw new NodeOperationError(this.getNode(), 'HMAC signature verification failed');
 				}
-				
-				console.log('✅ HMAC signature verified successfully');
 			}
 			
 			// Validate timestamp if required
 			if (nodeParameters.requireTimestamp) {
 				const timestamp = body.timestamp as string;
 				if (!timestamp) {
-					console.error('❌ Missing timestamp in webhook payload');
 					throw new NodeOperationError(this.getNode(), 'Missing timestamp in webhook payload');
 				}
 				
@@ -393,11 +336,8 @@ export class LaravelEloquentTrigger implements INodeType {
 				const maxAge = 5 * 60 * 1000; // 5 minutes
 				
 				if (timeDiff > maxAge) {
-					console.error('❌ Webhook timestamp too old:', { webhookTime, currentTime, timeDiff });
 					throw new NodeOperationError(this.getNode(), 'Webhook timestamp too old (replay attack protection)');
 				}
-				
-				console.log('✅ Timestamp validation passed');
 			}
 			
 			// Validate source IP if specified
@@ -408,7 +348,6 @@ export class LaravelEloquentTrigger implements INodeType {
 								headers['x-client-ip'] as string;
 				
 				if (!sourceIp) {
-					console.error('❌ Could not determine source IP');
 					throw new NodeOperationError(this.getNode(), 'Could not determine source IP for validation');
 				}
 				
@@ -433,11 +372,8 @@ export class LaravelEloquentTrigger implements INodeType {
 				}
 				
 				if (!isIpAllowed) {
-					console.error('❌ Source IP not in allowed range:', { sourceIp, allowedRange: nodeParameters.expectedSourceIp });
 					throw new NodeOperationError(this.getNode(), `Source IP ${sourceIp} not in allowed range ${nodeParameters.expectedSourceIp}`);
 				}
-				
-				console.log('✅ Source IP validation passed');
 			}
 			
 			// Extract the relevant data from the webhook payload
@@ -445,8 +381,6 @@ export class LaravelEloquentTrigger implements INodeType {
 			const model = body.model as string;
 			const data = body.data as IDataObject;
 			let metadata = body.metadata as IMetadata;
-			
-			console.log('📋 Extracted webhook data:', { event, model, data, metadata });
 			
 			// Add trigger node information to metadata for loop detection
 			if (!metadata) {
@@ -460,10 +394,7 @@ export class LaravelEloquentTrigger implements INodeType {
 				event: event,
 				timestamp: new Date().toISOString()
 			};
-			
-			console.log('🔒 Added loop detection metadata:', metadata.source_trigger);
-			console.log('🔒 Final metadata being sent to workflow:', metadata);
-			
+
 			// Return the data in the format n8n expects
 			return {
 				webhookResponse: {
@@ -487,7 +418,7 @@ export class LaravelEloquentTrigger implements INodeType {
 			};
 		} catch (error) {
 			console.error('❌ Error processing webhook:', error);
-			
+
 			// Return error response
 			return {
 				webhookResponse: {

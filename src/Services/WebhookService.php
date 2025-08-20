@@ -3,8 +3,6 @@
 namespace Shortinc\N8nEloquent\Services;
 
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Shortinc\N8nEloquent\Models\WebhookSubscription;
 
 class WebhookService
@@ -41,13 +39,14 @@ class WebhookService
         array $metadata = []
     ): array {
         // Check if a subscription already exists for this exact webhook URL
+        // We only match by webhook_url because that's what uniquely identifies an n8n node
         $existingSubscription = WebhookSubscription::where('webhook_url', $webhookUrl)
-            ->where('model_class', $modelClass)
             ->first();
 
         if ($existingSubscription) {
             // Update the existing subscription
             $existingSubscription->update([
+                'model_class' => $modelClass,
                 'events' => $events,
                 'properties' => $properties,
                 'node_id' => $metadata['node_id'] ?? null,
@@ -61,13 +60,6 @@ class WebhookService
 
             // Clear cache to force refresh
             $this->clearSubscriptionsCache();
-
-            Log::channel(config('n8n-eloquent.logging.channel'))
-                ->info("Updated existing webhook subscription for model {$modelClass}", [
-                    'subscription_id' => $existingSubscription->id,
-                    'events' => $events,
-                    'webhook_url' => $webhookUrl,
-                ]);
 
             return [
                 'message' => 'Webhook subscription updated successfully',
@@ -91,13 +83,6 @@ class WebhookService
 
         // Clear cache to force refresh
         $this->clearSubscriptionsCache();
-
-        Log::channel(config('n8n-eloquent.logging.channel'))
-            ->info("Created new webhook subscription for model {$modelClass}", [
-                'subscription_id' => $subscription->id,
-                'events' => $events,
-                'webhook_url' => $webhookUrl,
-            ]);
 
         return [
             'message' => 'Webhook subscription created successfully',
@@ -124,12 +109,6 @@ class WebhookService
 
         // Clear cache to force refresh
         $this->clearSubscriptionsCache();
-
-        Log::channel(config('n8n-eloquent.logging.channel'))
-            ->info("Deleted webhook subscription", [
-                'subscription_id' => $subscriptionId,
-                'model' => $subscription->model_class,
-            ]);
 
         return true;
     }
@@ -184,8 +163,6 @@ class WebhookService
         $this->clearSubscriptionsCache();
     }
 
-
-
     /**
      * Trigger a webhook for a model event.
      *
@@ -217,16 +194,6 @@ class WebhookService
             }
             $metadata['source_trigger'] = $sourceTrigger;
         }
-
-        // Debug: Log the metadata being processed
-        Log::channel(config('n8n-eloquent.logging.channel'))
-            ->info('WebhookService processing event', [
-                'model' => $modelClass,
-                'event' => $event,
-                'metadata' => $metadata,
-                'has_is_n8n_crud' => !empty($metadata['is_n8n_crud']),
-                'has_source_trigger' => !empty($metadata['source_trigger']),
-            ]);
 
         // Prepare the payload
         $payload = array_merge([
@@ -279,12 +246,6 @@ class WebhookService
 
             // Record successful trigger
             $subscription->recordTrigger();
-
-            Log::channel(config('n8n-eloquent.logging.channel'))
-                ->info("Sent webhook for subscription {$subscription->id}", [
-                    'status_code' => $response->getStatusCode(),
-                    'url' => $url,
-                ]);
         } catch (\Throwable $e) {
             // Record error
             $subscription->recordError([
@@ -292,12 +253,6 @@ class WebhookService
                 'url' => $url,
                 'code' => $e->getCode(),
             ]);
-
-            Log::channel(config('n8n-eloquent.logging.channel'))
-                ->error("Error sending webhook for subscription {$subscription->id}", [
-                    'error' => $e->getMessage(),
-                    'url' => $url,
-                ]);
         }
     }
 
@@ -354,11 +309,6 @@ class WebhookService
 
         // Clear cache to force refresh
         $this->clearSubscriptionsCache();
-
-        Log::channel(config('n8n-eloquent.logging.channel'))
-            ->info("Updated webhook subscription {$subscriptionId}", [
-                'updates' => $allowedUpdates,
-            ]);
 
         return $subscription->fresh()->toLegacyArray();
     }
@@ -503,15 +453,16 @@ class WebhookService
         string $webhookUrl,
         array $metadata = []
     ): array {
-        // Check if a subscription already exists for this exact webhook URL and event
+        // Check if a subscription already exists for this exact webhook URL
+        // We only match by webhook_url because that's what uniquely identifies an n8n node
         $existingSubscription = WebhookSubscription::where('webhook_url', $webhookUrl)
-            ->where('model_class', $eventClass)
             ->where('is_event_subscription', true)
             ->first();
 
         if ($existingSubscription) {
             // Update the existing subscription
             $existingSubscription->update([
+                'model_class' => $eventClass,
                 'node_id' => $metadata['node_id'] ?? null,
                 'workflow_id' => $metadata['workflow_id'] ?? null,
                 'verify_hmac' => $metadata['verify_hmac'] ?? true,
@@ -523,12 +474,6 @@ class WebhookService
 
             // Clear cache to force refresh
             $this->clearSubscriptionsCache();
-
-            Log::channel(config('n8n-eloquent.logging.channel'))
-                ->info("Updated existing event webhook subscription for {$eventClass}", [
-                    'subscription_id' => $existingSubscription->id,
-                    'webhook_url' => $webhookUrl,
-                ]);
 
             return [
                 'message' => 'Event webhook subscription updated successfully',
@@ -553,12 +498,6 @@ class WebhookService
 
         // Clear cache to force refresh
         $this->clearSubscriptionsCache();
-
-        Log::channel(config('n8n-eloquent.logging.channel'))
-            ->info("Created new event webhook subscription for {$eventClass}", [
-                'subscription_id' => $subscription->id,
-                'webhook_url' => $webhookUrl,
-            ]);
 
         return [
             'message' => 'Event webhook subscription created successfully',
@@ -609,12 +548,6 @@ class WebhookService
             try {
                 $this->sendWebhookRequest($subscription['webhook_url'], $payload, WebhookSubscription::find($subscription['id']));
             } catch (\Throwable $e) {
-                Log::channel(config('n8n-eloquent.logging.channel'))
-                    ->error("Failed to send event webhook for {$eventClass}", [
-                        'subscription_id' => $subscription['id'],
-                        'webhook_url' => $subscription['webhook_url'],
-                        'error' => $e->getMessage(),
-                    ]);
             }
         }
     }

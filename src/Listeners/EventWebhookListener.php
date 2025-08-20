@@ -2,7 +2,6 @@
 
 namespace Shortinc\N8nEloquent\Listeners;
 
-use Illuminate\Support\Facades\Log;
 use Shortinc\N8nEloquent\Services\WebhookService;
 
 class EventWebhookListener
@@ -42,39 +41,14 @@ class EventWebhookListener
 
         // Check if the current operation has n8n metadata to prevent loops
         if ($this->hasN8nMetadata()) {
-            Log::channel(config('n8n-eloquent.logging.channel'))
-                ->info('EventWebhookListener skipped - n8n metadata detected', [
-                    'event_class' => $eventClass,
-                    'eventData' => $this->getN8nMetadata(),
-                ]);
             return;
         }
 
-        // Debug: Log event properties to see what we're working with
-        Log::channel(config('n8n-eloquent.logging.channel'))
-            ->debug('EventWebhookListener processing event', [
-                'event_class' => $eventClass,
-                'event_properties' => $this->serializeEvent($event),
-            ]);
-
         try {
-            // Debug: Log what we're passing to the webhook service
-            Log::channel(config('n8n-eloquent.logging.channel'))
-                ->info('EventWebhookListener calling webhook service', [
-                    'event_class' => $eventClass,
-                    'event_data' => $this->serializeEvent($event),
-                ]);
-
             // Trigger the webhook
             $this->webhookService->triggerEventWebhook($eventClass, $event);
             
         } catch (\Throwable $e) {
-            Log::channel(config('n8n-eloquent.logging.channel'))
-                ->error('Failed to trigger event webhook', [
-                    'event_class' => $eventClass,
-                    'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString(),
-                ]);
         }
     }
 
@@ -134,8 +108,6 @@ class EventWebhookListener
         
         return $eventData;
     }
-
-
 
     /**
      * Serialize an event for logging.

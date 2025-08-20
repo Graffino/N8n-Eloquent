@@ -27,15 +27,6 @@ class ModelLifecycleListener extends BaseEventListener
             }
         }
 
-        // Debug: Log what we're passing to the webhook service
-        \Log::channel(config('n8n-eloquent.logging.channel'))
-            ->info('ModelLifecycleListener calling webhook service', [
-                'model' => $event->getModelClass(),
-                'event' => $event->eventType,
-                'eventData' => $event->eventData,
-                'has_eventData' => !empty($event->eventData),
-            ]);
-
         // Trigger the webhook
         $this->webhookService->triggerWebhook(
             $event->getModelClass(),

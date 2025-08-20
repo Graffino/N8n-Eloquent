@@ -137,13 +137,9 @@ export class LaravelEventDispatcher implements INodeType {
 		loadOptions: {
 			// Load available events from Laravel API
 			async getEvents(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
-				console.log('📋 getEvents() called - Loading event options');
 				try {
 					const credentials = await this.getCredentials('laravelEloquentApi');
 					const baseUrl = credentials.baseUrl as string;
-					
-					console.log('🔑 Using credentials with baseUrl:', baseUrl);
-					console.log('🌐 Making request to /api/n8n/events');
 					
 					const response = await this.helpers.httpRequestWithAuthentication.call(this, 'laravelEloquentApi', {
 						method: 'GET',
@@ -152,41 +148,32 @@ export class LaravelEventDispatcher implements INodeType {
 						skipSslCertificateValidation: true,
 					});
 
-					console.log('✅ Events response:', response);
-
 					const events = response.events.map((event: any) => ({
 						name: event.name,
 						value: event.class,
 						description: `Full class: ${event.class}`,
 					}));
-					
-					console.log('📋 Returning events:', events);
 					return events;
 				} catch (error) {
 					console.error('❌ Failed to load events:', error);
+					
 					throw new NodeOperationError(this.getNode(), `Failed to load events: ${(error as Error).message}`);
 				}
 			},
 			// Load event parameters
 			async getEventParameters(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
-				console.log('📋 getEventParameters() called - Loading event parameter options');
 				try {
 					const credentials = await this.getCredentials('laravelEloquentApi');
 					const baseUrl = credentials.baseUrl as string;
 					const event = this.getNodeParameter('event') as string;
 
 					if (!event) {
-						console.error('❌ No event selected');
 						throw new NodeOperationError(this.getNode(), 'Please select an event first');
 					}
 
-					console.log('🔑 Using credentials with baseUrl:', baseUrl);
-					console.log('🌐 Making request to get parameters for event:', event);
-					
 					// Encode the event name properly for the URL
 					const encodedEvent = encodeURIComponent(event);
 					const url = `${baseUrl}/api/n8n/events/${encodedEvent}/parameters`;
-					console.log('🔗 Request URL:', url);
 
 					try {
 						const response = await this.helpers.httpRequestWithAuthentication.call(this, 'laravelEloquentApi', {
@@ -196,10 +183,7 @@ export class LaravelEventDispatcher implements INodeType {
 							skipSslCertificateValidation: true,
 						});
 
-						console.log('✅ Event parameters response:', response);
-
 						if (!response.parameters || !Array.isArray(response.parameters)) {
-							console.error('❌ Invalid response format:', response);
 							throw new NodeOperationError(
 								this.getNode(),
 								'Invalid response format from API. Expected parameters array.'
@@ -212,13 +196,13 @@ export class LaravelEventDispatcher implements INodeType {
 							description: `Type: ${param.type}${param.required ? ' (required)' : ''}`,
 						}));
 					} catch (httpError: any) {
-						console.error('❌ HTTP request failed:', {
+						console.error('❌ Failed to load event parameters:', {
 							status: httpError.response?.status,
 							statusText: httpError.response?.statusText,
 							data: httpError.response?.data,
 							error: httpError.message,
 						});
-						
+
 						throw new NodeOperationError(
 							this.getNode(),
 							`Failed to load event parameters: ${httpError.message}`,
@@ -230,6 +214,7 @@ export class LaravelEventDispatcher implements INodeType {
 					}
 				} catch (error: any) {
 					console.error('❌ Failed to load event parameters:', error);
+					
 					throw error;
 				}
 			},
@@ -255,8 +240,6 @@ export class LaravelEventDispatcher implements INodeType {
 			execution_id: executionId,
 			is_n8n_event_dispatch: true,
 		};
-		
-		console.log('🔧 Event Dispatcher Node - Final metadata:', metadata);
 
 		try {
 			let responseData: IDataObject = {};
@@ -268,13 +251,9 @@ export class LaravelEventDispatcher implements INodeType {
 			const parameters = this.getNodeParameter('parameters.parameterValues', 0, []) as IDataObject[];
 			const eventData: IDataObject = {};
 			
-			console.log('🔧 Event Dispatcher Node - Raw parameters:', parameters);
-			
 			for (const param of parameters) {
 				eventData[param.parameterName as string] = param.parameterValue;
 			}
-			
-			console.log('🔧 Event Dispatcher Node - Processed event data:', eventData);
 
 			// Add metadata to the request
 			eventData.metadata = metadata;
@@ -291,8 +270,6 @@ export class LaravelEventDispatcher implements INodeType {
 				}
 			}
 
-			console.log('🔧 Event Dispatcher Node - Sending event data:', eventData);
-
 			const options: IHttpRequestOptions = {
 				method: 'POST' as IHttpRequestMethods,
 				url: eventApiUrl,
@@ -307,6 +284,8 @@ export class LaravelEventDispatcher implements INodeType {
 
 			return [returnData];
 		} catch (error: any) {
+			console.error('❌ Error processing event dispatch:', error);
+			
 			if (error.response) {
 				throw new NodeOperationError(this.getNode(), `API Error: ${error.response.data?.error || error.message}`, {
 					description: error.response.data?.message || 'Unknown API error',
