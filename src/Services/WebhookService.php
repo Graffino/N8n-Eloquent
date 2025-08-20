@@ -46,6 +46,7 @@ class WebhookService
         if ($existingSubscription) {
             // Update the existing subscription
             $existingSubscription->update([
+                'model_class' => $modelClass,
                 'events' => $events,
                 'properties' => $properties,
                 'node_id' => $metadata['node_id'] ?? null,
@@ -461,6 +462,7 @@ class WebhookService
         if ($existingSubscription) {
             // Update the existing subscription
             $existingSubscription->update([
+                'model_class' => $eventClass,
                 'node_id' => $metadata['node_id'] ?? null,
                 'workflow_id' => $metadata['workflow_id'] ?? null,
                 'verify_hmac' => $metadata['verify_hmac'] ?? true,
