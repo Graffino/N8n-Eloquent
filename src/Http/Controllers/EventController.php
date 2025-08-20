@@ -4,7 +4,6 @@ namespace Shortinc\N8nEloquent\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Shortinc\N8nEloquent\Services\EventDiscoveryService;
 use Shortinc\N8nEloquent\Services\WebhookService;
@@ -149,11 +148,6 @@ class EventController extends Controller
                 ],
             ]);
         } catch (\Exception $e) {
-            Log::error('Failed to search events', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-            
             return response()->json([
                 'error' => 'Failed to search events',
                 'message' => $e->getMessage(),
@@ -220,13 +214,6 @@ class EventController extends Controller
                 'subscription' => $subscription,
             ]);
         } catch (\Exception $e) {
-            Log::error('Failed to subscribe to event webhook', [
-                'event' => $eventClass,
-                'webhook_url' => $request->input('webhook_url'),
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-            
             return response()->json([
                 'error' => 'Failed to subscribe to event webhook',
                 'message' => $e->getMessage(),
@@ -265,12 +252,6 @@ class EventController extends Controller
                 'parameters' => $parameters,
             ]);
         } catch (\Exception $e) {
-            Log::error('Failed to get event parameters', [
-                'event' => $event,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-            
             return response()->json([
                 'error' => 'Failed to get event parameters',
                 'message' => $e->getMessage(),
@@ -326,14 +307,6 @@ class EventController extends Controller
             // The remaining data is the parameters
             $parameters = $allData;
             
-            // Debug logging
-            Log::channel(config('n8n-eloquent.logging.channel'))
-                ->info('Event dispatch request received', [
-                    'event_class' => $eventClass,
-                    'parameters' => $parameters,
-                    'metadata' => $metadata,
-                ]);
-            
             // Add n8n metadata to prevent loops
             $metadata['is_n8n_dispatched'] = true;
             $metadata['dispatched_at'] = now()->toISOString();
@@ -363,13 +336,6 @@ class EventController extends Controller
                 ], 500);
             }
         } catch (\Exception $e) {
-            Log::error('Failed to dispatch event', [
-                'event' => $event,
-                'parameters' => $request->input('parameters'),
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-            
             return response()->json([
                 'error' => 'Failed to dispatch event',
                 'message' => $e->getMessage(),
@@ -404,12 +370,6 @@ class EventController extends Controller
                 'message' => 'Event webhook subscription removed successfully',
             ]);
         } catch (\Exception $e) {
-            Log::error('Failed to unsubscribe from event webhook', [
-                'subscription_id' => $request->input('subscription_id'),
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-            
             return response()->json([
                 'error' => 'Failed to unsubscribe from event webhook',
                 'message' => $e->getMessage(),

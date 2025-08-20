@@ -5,7 +5,6 @@ namespace Shortinc\N8nEloquent\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\App;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Bus;
@@ -51,11 +50,6 @@ class JobController extends Controller
                 'jobs' => $jobs,
             ]);
         } catch (\Exception $e) {
-            Log::error('Failed to discover jobs', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-            
             return response()->json([
                 'error' => 'Failed to discover jobs',
                 'message' => $e->getMessage(),
@@ -94,12 +88,6 @@ class JobController extends Controller
                 'job' => $metadata,
             ]);
         } catch (\Exception $e) {
-            Log::error('Failed to get job metadata', [
-                'job' => $job,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-            
             return response()->json([
                 'error' => 'Failed to get job metadata',
                 'message' => $e->getMessage(),
@@ -138,12 +126,6 @@ class JobController extends Controller
                 'parameters' => $parameters,
             ]);
         } catch (\Exception $e) {
-            Log::error('Failed to get job parameters', [
-                'job' => $job,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-            
             return response()->json([
                 'error' => 'Failed to get job parameters',
                 'message' => $e->getMessage(),
@@ -207,14 +189,6 @@ class JobController extends Controller
             // The remaining data is the parameters
             $parameters = $allData;
             
-            // Debug logging
-            Log::channel(config('n8n-eloquent.logging.channel'))
-                ->info('Job dispatch request received', [
-                    'job_class' => $jobClass,
-                    'parameters' => $parameters,
-                    'metadata' => $metadata,
-                ]);
-            
             // Add n8n metadata to prevent loops
             $metadata['is_n8n_dispatched'] = true;
             $metadata['dispatched_at'] = now()->toISOString();
@@ -254,16 +228,6 @@ class JobController extends Controller
                 $dispatchedJob = Queue::push($jobInstance);
             }
             
-            // Log the dispatch
-            Log::info('Job dispatched from n8n', [
-                'job_class' => $jobClass,
-                'job_id' => $dispatchedJob,
-                'queue' => $queue,
-                'connection' => $connection,
-                'delay' => $delay,
-                'metadata' => $metadata,
-            ]);
-            
             return response()->json([
                 'success' => true,
                 'job_id' => $dispatchedJob,
@@ -274,30 +238,15 @@ class JobController extends Controller
             ]);
             
         } catch (\InvalidArgumentException $e) {
-            Log::error('Invalid job parameters', [
-                'job' => $job,
-                'data' => $request->all(),
-                'error' => $e->getMessage(),
-            ]);
-            
             return response()->json([
                 'error' => 'Invalid job parameters',
                 'message' => $e->getMessage(),
             ], 400);
         } catch (\Exception $e) {
-            Log::error('Failed to dispatch job', [
-                'job' => $job,
-                'data' => $request->all(),
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-            
             return response()->json([
                 'error' => 'Failed to dispatch job',
                 'message' => $e->getMessage(),
             ], 500);
         }
     }
-
-
 } 

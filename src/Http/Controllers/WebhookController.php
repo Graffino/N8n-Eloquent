@@ -4,7 +4,6 @@ namespace Shortinc\N8nEloquent\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Shortinc\N8nEloquent\Services\ModelDiscoveryService;
 use Shortinc\N8nEloquent\Services\WebhookService;
@@ -105,12 +104,6 @@ class WebhookController extends Controller
                 'subscription' => $subscription,
             ], 201);
         } catch (\Throwable $e) {
-            Log::channel(config('n8n-eloquent.logging.channel'))
-                ->error("Error creating webhook subscription for model {$modelClass}", [
-                    'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString(),
-                ]);
-                
             return response()->json([
                 'error' => "Error creating webhook subscription: {$e->getMessage()}",
             ], 500);
@@ -153,12 +146,6 @@ class WebhookController extends Controller
                 'message' => 'Webhook subscription deleted successfully',
             ]);
         } catch (\Throwable $e) {
-            Log::channel(config('n8n-eloquent.logging.channel'))
-                ->error("Error deleting webhook subscription {$subscriptionId}", [
-                    'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString(),
-                ]);
-                
             return response()->json([
                 'error' => "Error deleting webhook subscription: {$e->getMessage()}",
             ], 500);

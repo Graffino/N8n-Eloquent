@@ -3,7 +3,6 @@
 namespace Shortinc\N8nEloquent\Listeners;
 
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Shortinc\N8nEloquent\Events\BaseEvent;
 use Shortinc\N8nEloquent\Services\WebhookService;
 
@@ -55,15 +54,10 @@ abstract class BaseEventListener
             if ($transactionsEnabled) {
                 DB::commit();
             }
-            
-            $this->logSuccess($event);
-            
         } catch (\Throwable $e) {
             if ($transactionsEnabled && $rollbackOnError) {
                 DB::rollBack();
             }
-            
-            $this->logError($event, $e);
             
             // Re-throw if configured to do so
             if (config('n8n-eloquent.events.throw_on_error', false)) {
@@ -79,56 +73,13 @@ abstract class BaseEventListener
      * @return void
      */
     abstract protected function processEvent(BaseEvent $event);
-
-    /**
-     * Log successful event processing.
-     *
-     * @param  \N8n\Eloquent\Events\BaseEvent  $event
-     * @return void
-     */
-    protected function logSuccess(BaseEvent $event)
-    {
-        if (!config('n8n-eloquent.logging.enabled', true)) {
-            return;
-        }
-
-        Log::channel(config('n8n-eloquent.logging.channel'))
-            ->info("Successfully processed {$event->eventType} event for model {$event->getModelClass()}", [
-                'model_id' => $event->getModelKey(),
-                'event_type' => $event->eventType,
-                'timestamp' => $event->timestamp->toISOString(),
-            ]);
-    }
-
-    /**
-     * Log event processing error.
-     *
-     * @param  \N8n\Eloquent\Events\BaseEvent  $event
-     * @param  \Throwable  $exception
-     * @return void
-     */
-    protected function logError(BaseEvent $event, \Throwable $exception)
-    {
-        if (!config('n8n-eloquent.logging.enabled', true)) {
-            return;
-        }
-
-        Log::channel(config('n8n-eloquent.logging.channel'))
-            ->error("Error processing {$event->eventType} event for model {$event->getModelClass()}", [
-                'model_id' => $event->getModelKey(),
-                'event_type' => $event->eventType,
-                'error' => $exception->getMessage(),
-                'trace' => $exception->getTraceAsString(),
-                'timestamp' => $event->timestamp->toISOString(),
-            ]);
-    }
-
     /**
      * Check if the event should be queued.
      *
      * @param  \N8n\Eloquent\Events\BaseEvent  $event
      * @return bool
      */
+
     protected function shouldQueue(BaseEvent $event): bool
     {
         $modelClass = $event->getModelClass();
