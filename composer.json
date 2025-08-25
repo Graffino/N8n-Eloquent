@@ -1,5 +1,6 @@
 {
     "name": "shortdotinc/n8n-eloquent",
+    "version": "2.1.0",
     "description": "A Laravel package for seamlessly integrating Eloquent models with n8n workflows.",
     "type": "library",
     "license": "MIT",
