@@ -52,7 +52,6 @@ class WebhookManagementController extends Controller
         try {
             $subscriptions = $this->webhookService->getAllSubscriptions();
             
-            // Apply filters if provided
             if ($request->has('model')) {
                 $modelFilter = urldecode($request->input('model'));
                 $subscriptions = collect($subscriptions)->filter(function ($subscription) use ($modelFilter) {

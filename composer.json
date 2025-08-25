@@ -1,6 +1,6 @@
 {
-    "name": "shortinc/n8n-eloquent",
-    "description": "A Laravel package for seamlessly integrating Eloquent models with n8n workflows. Built with AI assistance using Cursor IDE.",
+    "name": "shortdotinc/n8n-eloquent",
+    "description": "A Laravel package for seamlessly integrating Eloquent models with n8n workflows.",
     "type": "library",
     "license": "MIT",
     "authors": [

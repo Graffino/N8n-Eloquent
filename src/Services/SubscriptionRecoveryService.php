@@ -125,12 +125,10 @@ class SubscriptionRecoveryService
         $backupName = $name ? "{$name}_{$timestamp}" : "subscriptions_backup_{$timestamp}";
         $filename = "{$backupName}.json";
 
-        // Get all subscriptions
         $subscriptions = WebhookSubscription::all()->map(function ($subscription) {
             return $subscription->toLegacyArray();
         })->toArray();
 
-        // Add metadata
         $backupData = [
             'metadata' => [
                 'created_at' => now()->toIso8601String(),
@@ -141,7 +139,6 @@ class SubscriptionRecoveryService
             'subscriptions' => $subscriptions,
         ];
 
-        // Store backup
         Storage::disk('local')->put("n8n-backups/{$filename}", json_encode($backupData, JSON_PRETTY_PRINT));
 
         Log::channel(config('n8n-eloquent.logging.channel'))
@@ -180,23 +177,19 @@ class SubscriptionRecoveryService
                 throw new \Exception('Invalid backup file format');
             }
 
-            // Clear existing subscriptions if requested
             if ($replaceExisting) {
                 WebhookSubscription::query()->delete();
                 Log::channel(config('n8n-eloquent.logging.channel'))
                     ->info('Existing subscriptions cleared for restore');
             }
 
-            // Restore subscriptions
             foreach ($backupData['subscriptions'] as $subscriptionData) {
                 try {
-                    // Check if subscription already exists
                     if (!$replaceExisting && WebhookSubscription::find($subscriptionData['id'])) {
                         $results['skipped']++;
                         continue;
                     }
 
-                    // Create subscription
                     WebhookSubscription::create([
                         'id' => $subscriptionData['id'],
                         'model_class' => $subscriptionData['model'],
@@ -566,7 +559,6 @@ class SubscriptionRecoveryService
             throw new \Exception('Invalid JSON format');
         }
 
-        // Handle both direct array and metadata format
         if (isset($data['subscriptions'])) {
             return $data['subscriptions'];
         }

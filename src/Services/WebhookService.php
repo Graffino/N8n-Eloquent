@@ -81,7 +81,6 @@ class WebhookService
             'active' => true,
         ]);
 
-        // Clear cache to force refresh
         $this->clearSubscriptionsCache();
 
         return [
@@ -104,10 +103,8 @@ class WebhookService
             return false;
         }
 
-        // Soft delete the subscription
         $subscription->delete();
 
-        // Clear cache to force refresh
         $this->clearSubscriptionsCache();
 
         return true;
@@ -174,7 +171,6 @@ class WebhookService
      */
     public function triggerWebhook(string $modelClass, string $event, $model, array $additionalPayload = []): void
     {
-        // Get subscriptions for this model and event directly from database
         $subscriptions = WebhookSubscription::active()
             ->forModelEvent($modelClass, $event)
             ->get();
@@ -300,7 +296,6 @@ class WebhookService
             return null;
         }
 
-        // Filter allowed updates
         $allowedUpdates = array_intersect_key($updates, array_flip([
             'events', 'webhook_url', 'properties', 'active'
         ]));
@@ -396,12 +391,10 @@ class WebhookService
         $migrated = 0;
 
         foreach ($cacheSubscriptions as $subscriptionData) {
-            // Check if subscription already exists in database
             if (WebhookSubscription::find($subscriptionData['id'])) {
                 continue;
             }
 
-            // Create subscription in database
             WebhookSubscription::create([
                 'id' => $subscriptionData['id'],
                 'model_class' => $subscriptionData['model'],

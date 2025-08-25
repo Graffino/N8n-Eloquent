@@ -63,10 +63,8 @@ class ModelDiscoveryService
         $whitelist = config('n8n-eloquent.models.whitelist', []);
         $blacklist = config('n8n-eloquent.models.blacklist', []);
 
-        // Get all PHP files in the models directory
         $files = $this->files->glob("{$modelDirectory}/*.php");
 
-        // Transform file paths to class names
         $models = collect($files)->map(function ($file) use ($modelNamespace, $modelDirectory) {
             $relativePath = Str::after($file, $modelDirectory . DIRECTORY_SEPARATOR);
             $className = $modelNamespace . '\\' . Str::beforeLast($relativePath, '.php');
@@ -74,7 +72,6 @@ class ModelDiscoveryService
             return $className;
         });
 
-        // Filter to include only Eloquent models
         $eloquentModels = $models->filter(function ($className) {
             if (!class_exists($className)) {
                 return false;
@@ -92,7 +89,6 @@ class ModelDiscoveryService
             }
         });
 
-        // Apply whitelist/blacklist filtering
         switch ($mode) {
             case 'whitelist':
                 $eloquentModels = $eloquentModels->filter(function ($className) use ($whitelist) {
@@ -128,33 +124,25 @@ class ModelDiscoveryService
      */
     public function getModelMetadata(string $modelClass): ?array
     {
-        // Check if the model is discoverable
         if (!$this->getModels()->contains($modelClass)) {
             return null;
         }
 
         try {
-            // Create reflection class
             $reflection = new ReflectionClass($modelClass);
             
-            // Get an instance of the model
             $model = App::make($modelClass);
             
-            // Get fillable attributes
             $fillable = $model->getFillable();
             
-            // Get table name
             $table = $model->getTable();
             
-            // Get primary key
             $primaryKey = $model->getKeyName();
             
-            // Get model events configuration
             $modelConfig = config("n8n-eloquent.models.config.{$modelClass}", []);
             $defaultEvents = config('n8n-eloquent.events.default', ['created', 'updated', 'deleted']);
             $events = $modelConfig['events'] ?? $defaultEvents;
             
-            // Get property getters/setters configuration
             $propertyEventsEnabled = config('n8n-eloquent.events.property_events.enabled', true);
             $defaultPropertyEvents = config('n8n-eloquent.events.property_events.default', []);
             $getters = $modelConfig['getters'] ?? $defaultPropertyEvents;
@@ -192,7 +180,6 @@ class ModelDiscoveryService
      */
     public function getModelProperties(string $modelClass): ?array
     {
-        // Check if the model is discoverable
         if (!$this->getModels()->contains($modelClass)) {
             Log::channel(config('n8n-eloquent.logging.channel'))
                 ->debug("Model {$modelClass} not found in discovered models");
@@ -208,13 +195,11 @@ class ModelDiscoveryService
             Log::channel(config('n8n-eloquent.logging.channel'))
                 ->debug("Model instance created successfully");
             
-            // Get table information using Laravel's Schema facade
             $table = $model->getTable();
             $connection = $model->getConnection();
             Log::channel(config('n8n-eloquent.logging.channel'))
                 ->debug("Table: {$table}, Connection: {$connection->getName()}");
             
-            // Get column information using Laravel's Schema
             $columns = Schema::connection($connection->getName())->getColumnListing($table);
             Log::channel(config('n8n-eloquent.logging.channel'))
                 ->debug("Columns found: " . count($columns));
@@ -299,10 +284,8 @@ class ModelDiscoveryService
                 // Determine field categories
                 $categories = $this->getFieldCategories($model, $fieldName, $property);
                 
-                // Get field validation rules if available
                 $validationRules = $this->getFieldValidationRules($modelClass, $fieldName);
                 
-                // Get field relationships
                 $relationship = $this->getFieldRelationship($model, $fieldName);
                 
                 // Generate human-readable label
@@ -410,18 +393,15 @@ class ModelDiscoveryService
         try {
             $dependencies = [];
             
-            // Check for enum dependencies
             $enumValues = $this->getFieldEnumValues($modelClass, $fieldName);
             if (!empty($enumValues)) {
                 $dependencies['enum_values'] = $enumValues;
             }
             
-            // Check for relationship dependencies
             $relationship = $this->getFieldRelationship(App::make($modelClass), $fieldName);
             if ($relationship) {
                 $dependencies['relationship'] = $relationship;
                 
-                // Get related model options
                 $relatedModel = $relationship['related_model'];
                 if (class_exists($relatedModel)) {
                     $relatedInstance = App::make($relatedModel);
@@ -429,7 +409,6 @@ class ModelDiscoveryService
                 }
             }
             
-            // Check for validation dependencies
             $validationRules = $this->getFieldValidationRules($modelClass, $fieldName);
             if (!empty($validationRules)) {
                 $dependencies['validation'] = $validationRules;
@@ -458,7 +437,6 @@ class ModelDiscoveryService
         try {
             $model = App::make($modelClass);
             
-            // Check if model has a rules method or property
             if (method_exists($model, 'rules')) {
                 return $model->rules();
             }
@@ -576,7 +554,6 @@ class ModelDiscoveryService
      */
     protected function getFieldRelationship($model, string $fieldName): ?array
     {
-        // Check if this is a foreign key field
         if (str_ends_with($fieldName, '_id')) {
             $relationshipName = Str::camel(str_replace('_id', '', $fieldName));
             
@@ -674,10 +651,8 @@ class ModelDiscoveryService
             $table = $model->getTable();
             $connection = $model->getConnection();
             
-            // Get column information
             $column = $connection->getDoctrineColumn($table, $fieldName);
             
-            // Check if it's an enum column
             if ($column->getType()->getName() === 'enum') {
                 // This would need database-specific implementation
                 // For now, return empty array
