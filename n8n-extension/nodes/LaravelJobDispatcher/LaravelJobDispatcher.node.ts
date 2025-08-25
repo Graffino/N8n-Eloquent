@@ -123,7 +123,6 @@ export class LaravelJobDispatcher implements INodeType {
 				default: 'default',
 				description: 'The queue to dispatch the job to',
 			},
-			// Delay for dispatchLater
 			{
 				displayName: 'Delay (seconds)',
 				name: 'delay',
@@ -139,7 +138,6 @@ export class LaravelJobDispatcher implements INodeType {
 				default: 0,
 				description: 'Number of seconds to delay the job execution',
 			},
-			// Additional options
 			{
 				displayName: 'Additional Fields',
 				name: 'additionalFields',
@@ -188,7 +186,6 @@ export class LaravelJobDispatcher implements INodeType {
 
 	methods = {
 		loadOptions: {
-			// Load available jobs from Laravel API
 			async getJobs(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 				try {
 					const credentials = await this.getCredentials('laravelEloquentApi');
@@ -214,7 +211,6 @@ export class LaravelJobDispatcher implements INodeType {
 					throw new NodeOperationError(this.getNode(), `Failed to load jobs: ${(error as Error).message}`);
 				}
 			},
-			// Load job parameters
 			async getJobParameters(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 				try {
 					const credentials = await this.getCredentials('laravelEloquentApi');
@@ -225,7 +221,6 @@ export class LaravelJobDispatcher implements INodeType {
 						throw new NodeOperationError(this.getNode(), 'Please select a job first');
 					}
 
-					// Encode the job name properly for the URL
 					const encodedJob = encodeURIComponent(job);
 					const url = `${baseUrl}/api/n8n/jobs/${encodedJob}/parameters`;
 
@@ -283,12 +278,10 @@ export class LaravelJobDispatcher implements INodeType {
 		const job = this.getNodeParameter('job', 0) as string;
 		const operation = this.getNodeParameter('operation', 0) as string;
 
-		// Get workflow execution context
 		const workflowId = this.getWorkflow().id;
 		const nodeId = this.getNode().id;
 		const executionId = this.getExecutionId();
 
-		// Add metadata to track n8n operations
 		const metadata: IMetadata = {
 			workflow_id: workflowId,
 			node_id: nodeId,
@@ -299,10 +292,8 @@ export class LaravelJobDispatcher implements INodeType {
 		try {
 			let responseData: IDataObject = {};
 			
-			// Construct the base URL for job operations
 			const jobApiUrl = `${baseUrl}/api/n8n/jobs/${encodeURIComponent(job)}/dispatch`;
 
-			// Prepare job data
 			const parameters = this.getNodeParameter('parameters.parameterValues', 0, []) as IDataObject[];
 			const jobData: IDataObject = {};
 			
@@ -310,7 +301,6 @@ export class LaravelJobDispatcher implements INodeType {
 				const paramName = param.parameterName as string;
 				let paramValue = param.parameterValue;
 				
-				// Handle JSON objects - if it's a string that looks like JSON, parse it
 				if (typeof paramValue === 'string' && (paramValue.startsWith('{') || paramValue.startsWith('['))) {
 					try {
 						paramValue = JSON.parse(paramValue);
@@ -323,10 +313,8 @@ export class LaravelJobDispatcher implements INodeType {
 				jobData[paramName] = paramValue;
 			}
 			
-			// Add metadata to the request
 			jobData.metadata = metadata;
 			
-			// Add additional fields
 			const additionalFields = this.getNodeParameter('additionalFields', 0) as IDataObject;
 			const queue = this.getNodeParameter('queue', 0) as string;
 			
@@ -336,7 +324,6 @@ export class LaravelJobDispatcher implements INodeType {
 				...additionalFields,
 			};
 
-			// Add delay for dispatchLater operation
 			if (operation === 'dispatchLater') {
 				const delay = this.getNodeParameter('delay', 0) as number;
 				requestData.delay = delay;

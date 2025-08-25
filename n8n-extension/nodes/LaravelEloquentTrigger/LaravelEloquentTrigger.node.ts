@@ -178,18 +178,13 @@ export class LaravelEloquentTrigger implements INodeType {
 		},
 	};
 
-	// Webhook lifecycle methods - these are the correct method names that n8n calls
 	webhookMethods = {
 		default: {
 			async checkExists(this: IHookFunctions): Promise<boolean> {
-				// This method is called when the workflow is activated
-				// Return false to indicate we don't have existing data to process
 				return false;
 			},
 
 			async create(this: IHookFunctions): Promise<boolean> {
-				// This method is called when the workflow is activated or saved
-				// It should register the webhook with the Laravel application
 				
 				try {
 					const model = this.getNodeParameter('model') as string;
@@ -198,7 +193,6 @@ export class LaravelEloquentTrigger implements INodeType {
 					const requireTimestamp = this.getNodeParameter('requireTimestamp', false) as boolean;
 					const expectedSourceIp = this.getNodeParameter('expectedSourceIp', '') as string;
 					
-					// Store node parameters in workflow static data for webhook execution
 					const webhookData = this.getWorkflowStaticData('node');
 					webhookData.nodeParameters = {
 						model,
@@ -231,7 +225,6 @@ export class LaravelEloquentTrigger implements INodeType {
 						skipSslCertificateValidation: true,
 					});
 					
-					// Store the subscription ID for later deletion
 					if (response.subscription && response.subscription.id) {
 						const webhookData = this.getWorkflowStaticData('node');
 						webhookData.subscriptionId = response.subscription.id;
@@ -246,12 +239,8 @@ export class LaravelEloquentTrigger implements INodeType {
 			},
 
 			async delete(this: IHookFunctions): Promise<boolean> {
-				// This method is called when the workflow is deactivated or the node is deleted
-				// It should unregister the webhook from the Laravel application
-				
 				const webhookData = this.getWorkflowStaticData('node');
 				
-				// Check if we have a subscription ID to delete
 				if (!webhookData.subscriptionId) {
 					return true;
 				}
@@ -270,14 +259,12 @@ export class LaravelEloquentTrigger implements INodeType {
 						skipSslCertificateValidation: true,
 					});
 					
-					// Clear the subscription ID
 					delete webhookData.subscriptionId;
 					
 					return true;
 				} catch (error) {
 					console.error('❌ Failed to unregister webhook:', error);
 					
-					// Don't throw error here as it might prevent workflow deactivation
 					return true;
 				}
 			},
@@ -289,12 +276,10 @@ export class LaravelEloquentTrigger implements INodeType {
 			const body = this.getBodyData() as IDataObject;
 			const headers = this.getHeaderData() as IDataObject;
 			
-			// Get the raw request body for HMAC verification
 			const rawBody = typeof this.getRequestObject().body === 'string' 
 				? this.getRequestObject().body 
 				: JSON.stringify(this.getRequestObject().body);
 			
-			// Get stored node parameters
 			const webhookData = this.getWorkflowStaticData('node');
 			const nodeParameters = webhookData.nodeParameters as INodeParameters;
 			
@@ -302,7 +287,6 @@ export class LaravelEloquentTrigger implements INodeType {
 				throw new NodeOperationError(this.getNode(), 'No node parameters found for webhook processing');
 			}
 			
-			// Validate HMAC signature if enabled
 			if (nodeParameters.verifyHmac) {
 				const signature = headers['x-n8n-signature'] as string;
 				const credentials = await this.getCredentials('laravelEloquentApi');
@@ -312,18 +296,15 @@ export class LaravelEloquentTrigger implements INodeType {
 					throw new NodeOperationError(this.getNode(), 'Missing HMAC signature or HMAC secret for verification');
 				}
 				
-				// Calculate expected signature using the raw body (same as Laravel)
 				const expectedSignature = createHmac('sha256', hmacSecret)
 					.update(rawBody)
 					.digest('hex');
 				
-				// Use timing-safe comparison
 				if (!timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature))) {
 					throw new NodeOperationError(this.getNode(), 'HMAC signature verification failed');
 				}
 			}
 			
-			// Validate timestamp if required
 			if (nodeParameters.requireTimestamp) {
 				const timestamp = body.timestamp as string;
 				if (!timestamp) {
@@ -340,7 +321,6 @@ export class LaravelEloquentTrigger implements INodeType {
 				}
 			}
 			
-			// Validate source IP if specified
 			if (nodeParameters.expectedSourceIp) {
 				const sourceIp = headers['x-forwarded-for'] as string || 
 								headers['x-real-ip'] as string || 
@@ -351,18 +331,13 @@ export class LaravelEloquentTrigger implements INodeType {
 					throw new NodeOperationError(this.getNode(), 'Could not determine source IP for validation');
 				}
 				
-				// Simple IP validation (you might want to use a proper CIDR library)
 				let isIpAllowed = false;
 				if (!nodeParameters.expectedSourceIp.includes('/')) {
-					// Single IP comparison
 					isIpAllowed = sourceIp === nodeParameters.expectedSourceIp;
 				} else {
-					// For CIDR ranges, this is a simplified check
-					// In production, you should use a proper CIDR library
 					const [rangeIp, bits] = nodeParameters.expectedSourceIp.split('/');
 					const mask = parseInt(bits);
 					
-					// Convert IPs to integers for comparison
 					const ipToNumber = (ip: string) => ip.split('.').reduce((acc, octet) => (acc << 8) + parseInt(octet), 0) >>> 0;
 					const ipNum = ipToNumber(sourceIp);
 					const rangeNum = ipToNumber(rangeIp);
@@ -376,13 +351,11 @@ export class LaravelEloquentTrigger implements INodeType {
 				}
 			}
 			
-			// Extract the relevant data from the webhook payload
 			const event = body.event as string;
 			const model = body.model as string;
 			const data = body.data as IDataObject;
 			let metadata = body.metadata as IMetadata;
 			
-			// Add trigger node information to metadata for loop detection
 			if (!metadata) {
 				metadata = {};
 			}
@@ -395,7 +368,6 @@ export class LaravelEloquentTrigger implements INodeType {
 				timestamp: new Date().toISOString()
 			};
 
-			// Return the data in the format n8n expects
 			return {
 				webhookResponse: {
 					statusCode: 200,
@@ -419,7 +391,6 @@ export class LaravelEloquentTrigger implements INodeType {
 		} catch (error) {
 			console.error('❌ Error processing webhook:', error);
 
-			// Return error response
 			return {
 				webhookResponse: {
 					statusCode: 400,

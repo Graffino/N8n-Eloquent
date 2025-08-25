@@ -1,44 +1,26 @@
 # n8n Laravel Eloquent Integration
 
-<div align="center">
-  <img src="credentials/laravel.svg" alt="n8n-eloquent Logo" width="200"/>
-  <h3>Seamless Laravel Eloquent Integration for n8n</h3>
-  <p>Build powerful workflows with your Laravel models</p>
-</div>
+Seamless Laravel Eloquent Integration for n8n - Build powerful workflows with your Laravel models.
 
-<div align="center">
-  <a href="#features">Features</a> •
-  <a href="#installation">Installation</a> •
-  <a href="#quick-start">Quick Start</a> •
-  <a href="#documentation">Documentation</a> •
-  <a href="#roadmap">Roadmap</a>
-</div>
-
-![n8n](https://img.shields.io/badge/n8n-community--node-FF6D5A)
-![Laravel](https://img.shields.io/badge/Laravel-8.x%20%7C%209.x%20%7C%2010.x%20%7C%2011.x%20%7C%2012.x-FF2D20)
-![License](https://img.shields.io/badge/license-MIT-blue)
-
-A comprehensive n8n community node package that provides seamless integration with Laravel Eloquent models. This extension allows you to trigger workflows on Laravel model events and perform CRUD operations directly from n8n.
-
-## 🌟 Features
+## Features
 
 ### Current Features
 
-- 🔄 **Model Event Integration**
+- **Model Event Integration**
   - Automatic webhook registration for Eloquent models
   - Real-time model event broadcasting to n8n
   - Support for all model lifecycle events (create, update, delete, restore, saving, saved)
   - Targeted property change tracking with configurable field visibility
   - Automatic webhook lifecycle management with health monitoring
 
-- 🎯 **Job & Event System**
+- **Job & Event System**
   - Dispatch Laravel jobs from n8n workflows with parameter validation
   - Listen for and dispatch custom Laravel events
   - Automatic job/event discovery and registration
   - Queue management with configurable options
   - Metadata tracking for workflow context
 
-- 🔐 **Enterprise-Grade Security**
+- **Enterprise-Grade Security**
   - Multi-layer security architecture with HMAC-SHA256 signature verification
   - API key authentication with timing-safe comparisons
   - IP whitelisting with CIDR support for webhook sources
@@ -52,46 +34,46 @@ A comprehensive n8n community node package that provides seamless integration wi
    - Configure security settings (HMAC verification, IP filtering, timestamp validation)
    - Real-time event broadcasting with metadata tracking
 
-2. **Laravel Event Listener Node** ⭐ **NEW**
+2. **Laravel Event Listener Node**
    - Listen for custom Laravel events and trigger n8n workflows
    - Automatic event discovery and webhook registration
    - Full event payload serialization with metadata tracking
    - Loop prevention with n8n metadata detection
    - Security settings (HMAC verification, IP filtering, timestamp validation)
 
-3. **Laravel Event Dispatcher Node** ⭐ **NEW**
+3. **Laravel Event Dispatcher Node**
    - Dispatch any Laravel event from n8n workflows
    - Automatic event discovery and parameter loading
    - Dynamic parameter validation and type checking
    - Metadata tracking for workflow context
    - Security-first approach with configurable options
 
-4. **Laravel Eloquent CRUD Node** ⭐ **CONSOLIDATED**
-   - **Unified Operations**: Create, read, update, and delete model records in a single node
-   - **Advanced Filtering**: Multiple operators (equals, not equals, greater than, less than, like, in)
-   - **Relationship Support**: Include related models with dynamic loading
-   - **Pagination & Sorting**: Configurable limits, offsets, and order by clauses
-   - **Batch Operations**: Support for multiple record operations
-   - **Enhanced Error Handling**: Comprehensive validation and error categorization
+4. **Laravel Eloquent CRUD Node**
+   - Unified Operations: Create, read, update, and delete model records in a single node
+   - Advanced Filtering: Multiple operators (equals, not equals, greater than, less than, like, in)
+   - Relationship Support: Include related models with dynamic loading
+   - Pagination & Sorting: Configurable limits, offsets, and order by clauses
+   - Batch Operations: Support for multiple record operations
+   - Enhanced Error Handling: Comprehensive validation and error categorization
 
-5. **Laravel Job Dispatcher Node** ⭐ **ENHANCED**
+5. **Laravel Job Dispatcher Node**
    - Dispatch Laravel jobs from n8n workflows with full parameter validation
-   - **Security-First Approach**: Only configured jobs are discoverable and dispatchable
-   - **Multiple Dispatch Modes**: Immediate, delayed, and synchronous execution
-   - **Queue Management**: Configurable queues, connections, and advanced options
-   - **Automatic Parameter Discovery**: Dynamic loading of job constructor parameters
-   - **Metadata Tracking**: Jobs include workflow and execution context information
+   - Security-First Approach: Only configured jobs are discoverable and dispatchable
+   - Multiple Dispatch Modes: Immediate, delayed, and synchronous execution
+   - Queue Management: Configurable queues, connections, and advanced options
+   - Automatic Parameter Discovery: Dynamic loading of job constructor parameters
+   - Metadata Tracking: Jobs include workflow and execution context information
 
 ### Advanced Capabilities
 
-- **🔭 Laravel Telescope Integration**: Monitor all n8n-related activities with custom tagging
-- **Health Monitoring**: Automatic subscription recovery and health status tracking
-- **Comprehensive Logging**: Detailed audit trails with n8n-specific tags for easy filtering
-- **Error Recovery**: Robust error handling with automatic retry mechanisms
-- **Performance Optimization**: Efficient request handling with minimal overhead
-- **Scalability**: Designed for high-volume webhook processing with concurrent support
+- Laravel Telescope Integration: Monitor all n8n-related activities with custom tagging
+- Health Monitoring: Automatic subscription recovery and health status tracking
+- Comprehensive Logging: Detailed audit trails with n8n-specific tags for easy filtering
+- Error Recovery: Robust error handling with automatic retry mechanisms
+- Performance Optimization: Efficient request handling with minimal overhead
+- Scalability: Designed for high-volume webhook processing with concurrent support
 
-## 📦 Installation
+## Installation
 
 ### Prerequisites
 
@@ -111,8 +93,6 @@ A comprehensive n8n community node package that provides seamless integration wi
 4. Click **Install**
 
 ### Manual Installation
-
-You can also install the package manually:
 
 ```bash
 npm install @shortinc/n8n-eloquent-nodes
@@ -135,7 +115,7 @@ npm run build
 npm run lint
 ```
 
-## 🔧 Configuration
+## Configuration
 
 ### 1. Laravel Setup
 
@@ -167,7 +147,7 @@ N8N_WEBHOOK_URL=https://your-n8n-instance.com/webhook/path
 N8N_WEBHOOK_SECRET=your-secret-key
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Model Event Integration
 
@@ -263,14 +243,13 @@ event(new UserRegistered($user)); // Will trigger n8n workflow
 
 3. Dispatch jobs from n8n workflows with full parameter validation and queue management.
 
-## 📋 Node Documentation
+## Node Documentation
 
-### 🔔 Laravel Eloquent Trigger
+### Laravel Eloquent Trigger
 
 Triggers workflows when Laravel model events occur.
 
 **Configuration:**
-
 - **Model**: Laravel model class (e.g., `App\Models\User`)
 - **Events**: Select which events to listen for:
   - `created` - When a new record is created
@@ -284,7 +263,6 @@ Triggers workflows when Laravel model events occur.
 - **Expected Source IP**: Restrict webhooks to specific IP addresses
 
 **Output:**
-
 ```json
 {
   "event": "created",
@@ -301,19 +279,17 @@ Triggers workflows when Laravel model events occur.
 }
 ```
 
-### 🎯 Laravel Event Listener
+### Laravel Event Listener
 
 Triggers workflows when custom Laravel events are dispatched.
 
 **Configuration:**
-
 - **Event**: Laravel event class (e.g., `App\Events\UserRegistered`)
 - **Verify HMAC Signature**: Enable/disable signature verification
 - **Require Timestamp Validation**: Reject webhooks older than 5 minutes
 - **Expected Source IP**: Restrict webhooks to specific IP addresses
 
 **Output:**
-
 ```json
 {
   "event": "dispatched",
@@ -338,12 +314,11 @@ Triggers workflows when custom Laravel events are dispatched.
 }
 ```
 
-### 💾 Laravel Eloquent CRUD
+### Laravel Eloquent CRUD
 
 Performs Create, Read, Update, and Delete operations on Laravel models.
 
 **Operations:**
-
 - **Create**: Create new records
 - **Get All Records**: Retrieve all records with pagination and filtering
 - **Get Record by ID**: Fetch a specific record by ID
@@ -351,7 +326,6 @@ Performs Create, Read, Update, and Delete operations on Laravel models.
 - **Delete**: Delete records
 
 **Configuration:**
-
 - **Model**: Laravel model class
 - **Operation**: Choose the CRUD operation to perform
 - **Fields**: Define field names and values (for Create/Update)
@@ -362,7 +336,6 @@ Performs Create, Read, Update, and Delete operations on Laravel models.
   - **Order By**: Sort results by multiple fields
 
 **Example Where Conditions:**
-
 ```json
 {
   "conditions": [
@@ -381,7 +354,6 @@ Performs Create, Read, Update, and Delete operations on Laravel models.
 ```
 
 **Example Order By:**
-
 ```json
 {
   "orders": [
@@ -397,10 +369,9 @@ Performs Create, Read, Update, and Delete operations on Laravel models.
 }
 ```
 
-## 🔄 Workflow Examples
+## Workflow Examples
 
 ### Example 1: User Registration Notification
-
 ```
 Laravel Eloquent Trigger (User created) 
 → Send Email Node 
@@ -408,7 +379,6 @@ Laravel Eloquent Trigger (User created)
 ```
 
 ### Example 2: Data Synchronization
-
 ```
 Schedule Trigger 
 → Laravel Eloquent CRUD (Get All Records) 
@@ -417,7 +387,6 @@ Schedule Trigger
 ```
 
 ### Example 3: Order Processing
-
 ```
 Laravel Eloquent Trigger (Order created) 
 → IF Node (check order amount) 
@@ -426,7 +395,6 @@ Laravel Eloquent Trigger (Order created)
 ```
 
 ### Example 4: Event-Driven Workflow
-
 ```
 Laravel Event Listener (UserRegistered) 
 → Send Welcome Email 
@@ -435,7 +403,6 @@ Laravel Event Listener (UserRegistered)
 ```
 
 ### Example 5: Job Processing Pipeline
-
 ```
 Laravel Job Dispatcher (ProcessDataJob) 
 → Wait for Completion 
@@ -443,45 +410,39 @@ Laravel Job Dispatcher (ProcessDataJob)
 → Update Dashboard
 ```
 
-## 🔐 Security
+## Security
 
 ### Multi-Layer Security Architecture
 
 Our extension implements comprehensive security measures to ensure safe communication:
 
 #### 1. API Key Authentication
-
 - All requests use API key authentication via `X-N8n-Api-Key` header
 - Strong, randomly generated keys during Laravel package setup
 - Support for key rotation and environment-specific keys
 
 #### 2. HMAC Signature Verification
-
 - HMAC-SHA256 signature verification for webhook payloads
 - Timing-safe comparison to prevent timing attacks
 - Configurable per trigger node with `verifyHmac` option
 - Signature sent in `X-Laravel-Signature` header
 
 #### 3. Timestamp Validation (Replay Attack Prevention)
-
 - Validates webhook timestamps to prevent replay attacks
 - Configurable time window (default: 5 minutes)
 - Ensures webhook freshness and prevents captured payload reuse
 
 #### 4. IP Address Restriction
-
 - Optional IP address or CIDR range filtering
 - Supports both single IP and subnet restrictions
 - Configurable per trigger node for granular control
 
 #### 5. Model and Event Validation
-
 - Validates incoming webhooks match configured models and events
 - Prevents unauthorized model access and cross-model data leakage
 - Ensures webhook authenticity and integrity
 
 #### 6. Enhanced Error Handling
-
 - Comprehensive security violation logging
 - Sanitized error messages (no sensitive data exposure)
 - Detailed categorization of authentication and validation errors
@@ -509,7 +470,7 @@ Our extension implements comprehensive security measures to ensure safe communic
 - **Keep timestamps synchronized** between systems
 - **Use strong secrets** (minimum 32 characters for HMAC)
 
-## 🛠️ Development
+## Development
 
 ### Testing
 
@@ -521,7 +482,7 @@ npm test
 npm run build
 ```
 
-## 📚 API Reference
+## API Reference
 
 ### Laravel Package Endpoints
 
@@ -539,7 +500,7 @@ The Laravel package provides these API endpoints:
 - `POST /api/n8n/events/dispatch` - Dispatch custom events
 - `POST /api/n8n/jobs/dispatch` - Dispatch Laravel jobs
 
-## 📚 Documentation
+## Documentation
 
 - [Complete Setup Guide](../docs/setup.md)
 - [Node Documentation](../docs/nodes.md)
@@ -548,7 +509,7 @@ The Laravel package provides these API endpoints:
 - [API Reference](../docs/api.md)
 - [Troubleshooting](../docs/troubleshooting.md)
 
-## 🗺️ Roadmap
+## Roadmap
 
 ### Future Plans (Q4 2025)
 
@@ -567,7 +528,7 @@ The Laravel package provides these API endpoints:
    - Template system with dynamic content
    - Practical examples: multi-channel alerts, marketing communications, appointment reminders
   
-4. **🔭 Laravel Telescope Integration**
+4. **Laravel Telescope Integration**
    - Advanced debugging and monitoring dashboard with n8n-specific panels
    - Real-time request tracking and performance profiling
    - Custom n8n tagging for easy log filtering and analysis
@@ -584,7 +545,7 @@ The Laravel package provides these API endpoints:
 - **Laravel Schedule Node**: Task scheduling for backups, cleanup, and recurring operations
 - **Laravel Validation Node**: Data validation with custom rules and form validation logic
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions! Please see our [Contributing Guide](../CONTRIBUTING.md) for details.
 
@@ -596,18 +557,18 @@ We welcome contributions! Please see our [Contributing Guide](../CONTRIBUTING.md
 4. Add tests if applicable
 5. Submit a pull request
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](../LICENSE) file for details.
 
-## 🆘 Support
+## Support
 
 - **Documentation**: [Full Documentation](https://github.com/shortinc/n8n-eloquent/wiki)
 - **Issues**: [GitHub Issues](https://github.com/shortinc/n8n-eloquent/issues)
 - **Community**: [n8n Community Forum](https://community.n8n.io)
 - **Discord**: [n8n Discord Server](https://discord.gg/n8n)
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - [n8n](https://n8n.io) - The workflow automation platform
 - [Laravel](https://laravel.com) - The PHP framework
@@ -615,7 +576,5 @@ This project is licensed under the MIT License - see the [LICENSE](../LICENSE) f
 
 ---
 
-<div align="center">
-Built with ❤️ by Short Inc.<br>
+Built with ❤️ by Short Inc.  
 Powered by n8n & Laravel
-</div>

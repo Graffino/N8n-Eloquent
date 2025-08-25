@@ -1,8 +1,8 @@
 {
 	"info": {
 		"_postman_id": "n8n-eloquent-api-collection-v2",
-		"name": "n8n-Eloquent API Collection v2.0 - Production Ready",
-		"description": "Comprehensive API collection for testing n8n-Eloquent Laravel package with all production features including database persistence, health monitoring, enhanced model discovery, and complete CRUD operations.",
+		"name": "n8n-Eloquent API Collection v2.1 - Complete API Coverage",
+		"description": "Comprehensive API collection for testing n8n-Eloquent Laravel package with all production features including database persistence, health monitoring, enhanced model discovery, complete CRUD operations, job discovery/dispatching, and event discovery/dispatching.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "n8n-eloquent-v2"
 	},
@@ -1128,6 +1128,389 @@
 			"description": "Comprehensive health monitoring and analytics for the n8n-Eloquent system."
 		},
 		{
+			"name": "🚀 Job Discovery & Dispatching",
+			"item": [
+				{
+					"name": "Get All Jobs",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-N8n-Api-Key",
+								"value": "{{api_secret}}",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/n8n/jobs",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"n8n",
+								"jobs"
+							]
+						},
+						"description": "Get all available jobs with metadata including class, name, and dispatch capabilities."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Specific Job Details",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-N8n-Api-Key",
+								"value": "{{api_secret}}",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/n8n/jobs/{{job_class}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"n8n",
+								"jobs",
+								"{{job_class}}"
+							]
+						},
+						"description": "Get detailed information about a specific job class including parameters and dispatch options."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Job Parameters",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-N8n-Api-Key",
+								"value": "{{api_secret}}",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/n8n/jobs/{{job_class}}/parameters",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"n8n",
+								"jobs",
+								"{{job_class}}",
+								"parameters"
+							]
+						},
+						"description": "Get parameter information for a specific job including types, validation rules, and dependencies."
+					},
+					"response": []
+				},
+				{
+					"name": "Dispatch Job",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-N8n-Api-Key",
+								"value": "{{api_secret}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"parameters\": {\n        \"userId\": 1,\n        \"message\": \"Hello from n8n!\"\n    },\n    \"queue\": \"default\",\n    \"delay\": 0\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/n8n/jobs/{{job_class}}/dispatch",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"n8n",
+								"jobs",
+								"{{job_class}}",
+								"dispatch"
+							]
+						},
+						"description": "Dispatch a job with parameters, queue configuration, and optional delay."
+					},
+					"response": []
+				}
+			],
+			"description": "Job discovery and dispatching operations for Laravel queue jobs."
+		},
+		{
+			"name": "📡 Event Discovery & Dispatching",
+			"item": [
+				{
+					"name": "Get All Events",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-N8n-Api-Key",
+								"value": "{{api_secret}}",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/n8n/events",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"n8n",
+								"events"
+							]
+						},
+						"description": "Get all available events with metadata including class, name, and dispatch capabilities."
+					},
+					"response": []
+				},
+				{
+					"name": "Search Events",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-N8n-Api-Key",
+								"value": "{{api_secret}}",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/n8n/events/search?q=User",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"n8n",
+								"events",
+								"search"
+							],
+							"query": [
+								{
+									"key": "q",
+									"value": "User",
+									"description": "Search term for event names"
+								}
+							]
+						},
+						"description": "Search for events by name or class."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Specific Event Details",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-N8n-Api-Key",
+								"value": "{{api_secret}}",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/n8n/events/{{event_class}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"n8n",
+								"events",
+								"{{event_class}}"
+							]
+						},
+						"description": "Get detailed information about a specific event class including parameters and dispatch options."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Event Parameters",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-N8n-Api-Key",
+								"value": "{{api_secret}}",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/n8n/events/{{event_class}}/parameters",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"n8n",
+								"events",
+								"{{event_class}}",
+								"parameters"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Dispatch Event",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-N8n-Api-Key",
+								"value": "{{api_secret}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"parameters\": {\n        \"userId\": 1,\n        \"action\": \"login\",\n        \"timestamp\": \"{{timestamp}}\"\n    }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/n8n/events/{{event_class}}/dispatch",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"n8n",
+								"events",
+								"{{event_class}}",
+								"dispatch"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Subscribe to Event",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-N8n-Api-Key",
+								"value": "{{api_secret}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"event_class\": \"App\\\\Events\\\\UserLoginEvent\",\n    \"webhook_url\": \"http://localhost:5678/webhook/user-login\",\n    \"verify_hmac\": true,\n    \"require_timestamp\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/n8n/events/subscribe",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"n8n",
+								"events",
+								"subscribe"
+							]
+						},
+						"description": "Subscribe to a specific event with webhook configuration."
+					},
+					"response": []
+				},
+				{
+					"name": "Unsubscribe from Event",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "X-N8n-Api-Key",
+								"value": "{{api_secret}}",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/n8n/events/unsubscribe",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"n8n",
+								"events",
+								"unsubscribe"
+							]
+						},
+						"description": "Unsubscribe from an event webhook subscription."
+					},
+					"response": []
+				}
+			],
+			"description": "Event discovery and dispatching operations for Laravel events."
+		},
+		{
 			"name": "🧪 Testing & Validation",
 			"item": [
 				{
@@ -1299,6 +1682,18 @@
 			"key": "field_name",
 			"value": "name",
 			"type": "string"
+		},
+		{
+			"key": "job_class",
+			"value": "App%5CJobs%5CSendEmailJob",
+			"type": "string",
+			"description": "URL-encoded job class name"
+		},
+		{
+			"key": "event_class",
+			"value": "App%5CEvents%5CUserLoginEvent",
+			"type": "string",
+			"description": "URL-encoded event class name"
 		}
 	]
 } 

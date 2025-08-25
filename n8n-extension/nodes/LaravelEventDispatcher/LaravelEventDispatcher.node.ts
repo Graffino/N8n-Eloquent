@@ -160,7 +160,6 @@ export class LaravelEventDispatcher implements INodeType {
 					throw new NodeOperationError(this.getNode(), `Failed to load events: ${(error as Error).message}`);
 				}
 			},
-			// Load event parameters
 			async getEventParameters(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 				try {
 					const credentials = await this.getCredentials('laravelEloquentApi');
@@ -171,7 +170,6 @@ export class LaravelEventDispatcher implements INodeType {
 						throw new NodeOperationError(this.getNode(), 'Please select an event first');
 					}
 
-					// Encode the event name properly for the URL
 					const encodedEvent = encodeURIComponent(event);
 					const url = `${baseUrl}/api/n8n/events/${encodedEvent}/parameters`;
 
@@ -228,12 +226,10 @@ export class LaravelEventDispatcher implements INodeType {
 		const baseUrl = credentials.baseUrl as string;
 		const event = this.getNodeParameter('event', 0) as string;
 
-		// Get workflow execution context
 		const workflowId = this.getWorkflow().id;
 		const nodeId = this.getNode().id;
 		const executionId = this.getExecutionId();
 
-		// Add metadata to track n8n operations
 		const metadata: IMetadata = {
 			workflow_id: workflowId,
 			node_id: nodeId,
@@ -244,10 +240,8 @@ export class LaravelEventDispatcher implements INodeType {
 		try {
 			let responseData: IDataObject = {};
 			
-			// Construct the base URL for event operations
 			const eventApiUrl = `${baseUrl}/api/n8n/events/${encodeURIComponent(event)}/dispatch`;
 
-			// Prepare event data
 			const parameters = this.getNodeParameter('parameters.parameterValues', 0, []) as IDataObject[];
 			const eventData: IDataObject = {};
 			
@@ -255,7 +249,6 @@ export class LaravelEventDispatcher implements INodeType {
 				eventData[param.parameterName as string] = param.parameterValue;
 			}
 
-			// Add metadata to the request
 			eventData.metadata = metadata;
 			
 			// Add custom metadata if provided

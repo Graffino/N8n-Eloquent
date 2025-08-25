@@ -343,7 +343,6 @@ export class LaravelEloquentCrud implements INodeType {
 					throw new NodeOperationError(this.getNode(), `Failed to load models: ${(error as Error).message}`);
 				}
 			},
-			// Add new getFields method
 			async getFields(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 				try {
 					const credentials = await this.getCredentials('laravelEloquentApi');
@@ -354,7 +353,6 @@ export class LaravelEloquentCrud implements INodeType {
 						throw new NodeOperationError(this.getNode(), 'Please select a model first');
 					}
 					
-					// Encode the model name properly for the URL
 					const encodedModel = encodeURIComponent(model);
 					const url = `${baseUrl}/api/n8n/models/${encodedModel}/fields`;
 
@@ -413,12 +411,10 @@ export class LaravelEloquentCrud implements INodeType {
 		const model = this.getNodeParameter('model', 0) as string;
 		const operation = this.getNodeParameter('operation', 0) as string;
 
-		// Get workflow execution context
 		const workflowId = this.getWorkflow().id;
 		const nodeId = this.getNode().id;
 		const executionId = this.getExecutionId();
 
-		// Add metadata to track n8n operations
 		const metadata: IMetadata = {
 			workflow_id: workflowId,
 			node_id: nodeId,
@@ -430,7 +426,6 @@ export class LaravelEloquentCrud implements INodeType {
 		try {
 			let responseData: IDataObject | IDataObject[] = [];
 			
-			// Construct the base URL for model operations
 			const modelApiUrl = `${baseUrl}/api/n8n/models/${encodeURIComponent(model)}/records`;
 
 			switch (operation) {

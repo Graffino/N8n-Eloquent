@@ -1,5 +1,5 @@
 {
-  "name": "@shortinc/n8n-eloquent-nodes",
+  "name": "@shortdotinc/n8n-eloquent-nodes",
   "version": "2.0.0",
   "description": "n8n nodes for Laravel Eloquent integration - trigger workflows on model events and perform CRUD operations",
   "main": "dist/index.js",
