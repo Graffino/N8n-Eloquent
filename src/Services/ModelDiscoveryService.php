@@ -340,14 +340,12 @@ class ModelDiscoveryService
                     continue;
                 }
                 
-                // Skip magic methods and common model methods
                 if (str_starts_with($method->name, '__') || 
                     in_array($method->name, ['getTable', 'getKeyName', 'getFillable', 'getHidden', 'getDates'])) {
                     continue;
                 }
                 
                 try {
-                    // Try to call the method to see if it returns a relationship
                     $result = $model->{$method->name}();
                     
                     if ($this->isEloquentRelationship($result)) {
@@ -364,7 +362,6 @@ class ModelDiscoveryService
                         ];
                     }
                 } catch (\Throwable $e) {
-                    // Skip methods that throw exceptions
                     continue;
                 }
             }
@@ -445,7 +442,6 @@ class ModelDiscoveryService
                 return $model->rules;
             }
             
-            // Try to get rules from form request if available
             $formRequestClass = str_replace('Models', 'Http\\Requests', $modelClass) . 'Request';
             if (class_exists($formRequestClass)) {
                 $formRequest = App::make($formRequestClass);
@@ -478,52 +474,42 @@ class ModelDiscoveryService
     {
         $categories = [];
         
-        // Primary key
         if ($property['primary']) {
             $categories[] = 'primary';
         }
         
-        // Fillable
         if ($property['fillable']) {
             $categories[] = 'fillable';
         }
         
-        // Hidden
         if (in_array($fieldName, $model->getHidden())) {
             $categories[] = 'hidden';
         }
         
-        // Dates
         if (in_array($fieldName, $model->getDates())) {
             $categories[] = 'date';
         }
         
-        // Timestamps
         if (in_array($fieldName, ['created_at', 'updated_at', 'deleted_at'])) {
             $categories[] = 'timestamp';
         }
         
-        // Foreign keys (ending with _id)
         if (str_ends_with($fieldName, '_id')) {
             $categories[] = 'foreign_key';
         }
         
-        // JSON fields
         if (in_array($property['type'], ['json', 'jsonb'])) {
             $categories[] = 'json';
         }
         
-        // Text fields
         if (in_array($property['type'], ['text', 'longtext', 'mediumtext'])) {
             $categories[] = 'text';
         }
         
-        // Numeric fields
         if (in_array($property['type'], ['integer', 'bigint', 'decimal', 'float', 'double'])) {
             $categories[] = 'numeric';
         }
         
-        // Boolean fields
         if ($property['type'] === 'boolean') {
             $categories[] = 'boolean';
         }
@@ -569,7 +555,6 @@ class ModelDiscoveryService
                         ];
                     }
                 } catch (\Throwable $e) {
-                    // Relationship method exists but throws exception
                 }
             }
         }
@@ -628,7 +613,6 @@ class ModelDiscoveryService
         $docComment = $reflection->getDocComment();
         
         if ($docComment) {
-            // Look for @property annotations
             if (preg_match("/@property\s+\S+\s+\\\${$fieldName}\s+(.+)/", $docComment, $matches)) {
                 return trim($matches[1]);
             }
@@ -654,8 +638,6 @@ class ModelDiscoveryService
             $column = $connection->getDoctrineColumn($table, $fieldName);
             
             if ($column->getType()->getName() === 'enum') {
-                // This would need database-specific implementation
-                // For now, return empty array
                 return [];
             }
             

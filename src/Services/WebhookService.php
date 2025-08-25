@@ -38,13 +38,10 @@ class WebhookService
         array $properties = [],
         array $metadata = []
     ): array {
-        // Check if a subscription already exists for this exact webhook URL
-        // We only match by webhook_url because that's what uniquely identifies an n8n node
         $existingSubscription = WebhookSubscription::where('webhook_url', $webhookUrl)
             ->first();
 
         if ($existingSubscription) {
-            // Update the existing subscription
             $existingSubscription->update([
                 'model_class' => $modelClass,
                 'events' => $events,
@@ -55,10 +52,9 @@ class WebhookService
                 'require_timestamp' => $metadata['require_timestamp'] ?? true,
                 'expected_source_ip' => $metadata['expected_source_ip'] ?? null,
                 'active' => true,
-                'last_error' => null, // Clear any previous errors
+                'last_error' => null,
             ]);
 
-            // Clear cache to force refresh
             $this->clearSubscriptionsCache();
 
             return [
@@ -67,7 +63,6 @@ class WebhookService
             ];
         }
 
-        // Create a new subscription if none exists
         $subscription = WebhookSubscription::create([
             'model_class' => $modelClass,
             'events' => $events,
@@ -137,7 +132,6 @@ class WebhookService
      */
     public function getSubscriptionsForModelEvent(string $modelClass, string $event): array
     {
-        // Use database query for better performance on specific lookups
         return WebhookSubscription::active()
             ->forModelEvent($modelClass, $event)
             ->get()
@@ -156,7 +150,6 @@ class WebhookService
      */
     protected function saveSubscriptions(array $subscriptions): void
     {
-        // This method is kept for backward compatibility but now clears cache
         $this->clearSubscriptionsCache();
     }
 
@@ -179,10 +172,8 @@ class WebhookService
             return;
         }
 
-        // Initialize metadata if not present
         $metadata = $additionalPayload['metadata'] ?? [];
         
-        // Ensure source_trigger is properly structured
         if (!empty($metadata['source_trigger'])) {
             $sourceTrigger = $metadata['source_trigger'];
             if (!isset($sourceTrigger['timestamp'])) {
@@ -191,7 +182,6 @@ class WebhookService
             $metadata['source_trigger'] = $sourceTrigger;
         }
 
-        // Prepare the payload
         $payload = array_merge([
             'event' => $event,
             'model' => $modelClass,
@@ -200,7 +190,6 @@ class WebhookService
             'metadata' => $metadata
         ], $additionalPayload);
 
-        // Send the webhook to each subscription
         foreach ($subscriptions as $subscription) {
             $this->sendWebhookRequest(
                 $subscription->webhook_url,
@@ -225,11 +214,9 @@ class WebhookService
             
             $hmacSecret = config('n8n-eloquent.webhooks.hmac_secret');
             
-            // Calculate HMAC signature using the JSON-encoded payload
             $jsonPayload = json_encode($payload);
             $signature = hash_hmac('sha256', $jsonPayload, $hmacSecret);
             
-            // Send the request with the raw JSON string to match the HMAC calculation
             $response = $client->post($url, [
                 'body' => $jsonPayload,
                 'headers' => [
@@ -446,14 +433,11 @@ class WebhookService
         string $webhookUrl,
         array $metadata = []
     ): array {
-        // Check if a subscription already exists for this exact webhook URL
-        // We only match by webhook_url because that's what uniquely identifies an n8n node
         $existingSubscription = WebhookSubscription::where('webhook_url', $webhookUrl)
             ->where('is_event_subscription', true)
             ->first();
 
         if ($existingSubscription) {
-            // Update the existing subscription
             $existingSubscription->update([
                 'model_class' => $eventClass,
                 'node_id' => $metadata['node_id'] ?? null,
@@ -462,10 +446,9 @@ class WebhookService
                 'require_timestamp' => $metadata['require_timestamp'] ?? true,
                 'expected_source_ip' => $metadata['expected_source_ip'] ?? null,
                 'active' => true,
-                'last_error' => null, // Clear any previous errors
+                'last_error' => null,
             ]);
 
-            // Clear cache to force refresh
             $this->clearSubscriptionsCache();
 
             return [
