@@ -509,41 +509,6 @@ The Laravel package provides these API endpoints:
 - [API Reference](../docs/api.md)
 - [Troubleshooting](../docs/troubleshooting.md)
 
-## Roadmap
-
-### Future Plans (Q4 2025)
-
-1. **Laravel Cache Node**
-   - Cache operations with multiple store support
-   - Atomic operations and cache tagging
-   - Practical examples: API response caching, analytics storage, session management
-
-2. **Laravel Queue Node**
-   - Queue management and worker control
-   - Failed job handling and retry mechanisms
-   - Practical examples: job monitoring, queue optimization, workload distribution
-
-3. **Laravel Notification Node**
-   - Send Laravel notifications through multiple channels
-   - Template system with dynamic content
-   - Practical examples: multi-channel alerts, marketing communications, appointment reminders
-  
-4. **Laravel Telescope Integration**
-   - Advanced debugging and monitoring dashboard with n8n-specific panels
-   - Real-time request tracking and performance profiling
-   - Custom n8n tagging for easy log filtering and analysis
-   - Detailed webhook and job execution monitoring
-   - Automatic model discovery with dynamic field loading
-   - Health monitoring with subscription recovery mechanisms
-   - Integration with Laravel's error tracking and reporting
-
-### Under Consideration
-
-- **Laravel Broadcasting Node**: Real-time broadcasting for chat applications, live dashboards, and collaborative features
-- **Laravel File Storage Node**: File operations across different storage providers with backup and sharing capabilities
-- **Laravel Mail Node**: Email management with templates, queuing, and delivery tracking
-- **Laravel Schedule Node**: Task scheduling for backups, cleanup, and recurring operations
-- **Laravel Validation Node**: Data validation with custom rules and form validation logic
 
 ## Contributing
 
@@ -576,6 +541,4 @@ This project is licensed under the MIT License - see the [LICENSE](../LICENSE) f
 
 ---
 
-Built with ❤️ by Short Inc.  
-Powered by n8n & Laravel  
-Assisted by AI after built with love
+Built with ❤️ by Short Inc. Assisted by AI
