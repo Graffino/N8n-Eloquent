@@ -1,0 +1,51 @@
+name: Security and Dependencies
+
+on:
+  schedule:
+    - cron: '0 2 * * 1' # Every Monday at 2 AM
+  workflow_dispatch:
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: 'n8n-extension/package-lock.json'
+          
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, xml, ctype, iconv, intl
+          
+      - name: Install Node.js dependencies
+        run: |
+          cd n8n-extension
+          npm ci
+          
+      - name: Install PHP dependencies
+        run: composer install --prefer-dist --no-dev
+        
+      - name: Run npm audit
+        run: |
+          cd n8n-extension
+          npm audit --audit-level=moderate
+          
+      - name: Run composer audit
+        run: composer audit --format=json --output=composer-audit.json
+        
+      - name: Upload security results
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-scan-results
+          path: |
+            composer-audit.json
+            n8n-extension/npm-audit.json

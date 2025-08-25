@@ -1,0 +1,47 @@
+name: Publish n8n-extension to npm
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  publish-npm:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          registry-url: 'https://registry.npmjs.org'
+          
+      - name: Install dependencies
+        run: |
+          cd n8n-extension
+          npm ci
+          
+      - name: Build package
+        run: |
+          cd n8n-extension
+          npm run build
+          
+      - name: Publish to npm
+        run: |
+          cd n8n-extension
+          npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          
+      - name: Create Release Assets
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            n8n-extension/dist/**/*
+            n8n-extension/package.json
+            n8n-extension/README.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
