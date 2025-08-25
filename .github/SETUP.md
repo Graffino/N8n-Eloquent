@@ -30,8 +30,8 @@ The workflows use your self-hosted runners with these labels:
 
 ## How It Works
 
-1. **npm Publishing**: Automatically publishes when you create a GitHub release
-2. **Packagist Publishing**: Automatically publishes when you create a GitHub release
+1. **npm Publishing**: Automatically publishes when you push a new version tag (e.g., `v2.1.0`)
+2. **Packagist Publishing**: Automatically publishes when you push a new version tag (e.g., `v2.1.0`)
 3. **Manual Trigger**: Both workflows can be run manually via workflow dispatch
 
 ## Testing
@@ -39,4 +39,8 @@ The workflows use your self-hosted runners with these labels:
 1. Push these workflow files to your repository
 2. Go to Actions tab to see the workflows
 3. Test with manual workflow dispatch
-4. Create a release to test automatic publishing
+4. Push a new version tag to test automatic publishing:
+   ```bash
+   git tag v2.1.1
+   git push origin v2.1.1
+   ```
