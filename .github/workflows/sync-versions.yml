@@ -1,0 +1,69 @@
+name: Sync Package Versions
+run-name: "${{ github.repository }} -> Sync versions to ${{ github.event.inputs.version }} by ${{ github.actor }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to sync both packages to (e.g., 2.1.1)'
+        required: true
+        default: '2.1.1'
+      create-pr:
+        description: 'Create a Pull Request with version changes'
+        required: false
+        default: true
+        type: boolean
+
+jobs:
+  sync-versions:
+    runs-on: [self-hosted, graffino, ubuntu-latest]
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Verify current versions
+        run: |
+          echo "Current versions:"
+          echo "Laravel: $(grep '"version"' composer.json)"
+          echo "n8n: $(grep '"version"' n8n-extension/package.json)"
+          
+      - name: Sync versions
+        run: |
+          chmod +x scripts/sync-versions.sh
+          ./scripts/sync-versions.sh ${{ github.event.inputs.version }}
+          
+      - name: Verify sync results
+        run: |
+          echo "✅ Version sync completed!"
+          echo "📋 New versions:"
+          echo "  - Laravel package: $(grep '"version"' composer.json)"
+          echo "  - n8n extension: $(grep '"version"' n8n-extension/package.json)"
+          
+      - name: Create Pull Request
+        if: ${{ github.event.inputs.create-pr }}
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "Bump version to ${{ github.event.inputs.version }}"
+          title: "Bump version to ${{ github.event.inputs.version }}"
+          body: |
+            ## Version Bump to ${{ github.event.inputs.version }}
+            
+            This PR synchronizes both packages to version ${{ github.event.inputs.version }}:
+            
+            - 📦 Laravel package (`composer.json`)
+            - 🔌 n8n extension (`package.json`)
+            - 🔒 n8n extension (`package-lock.json`)
+            
+            **Note**: This is a version sync only. To actually release, create a new tag after merging this PR.
+            
+            ### Next Steps:
+            1. Review and merge this PR
+            2. Create and push a new tag: `git tag v${{ github.event.inputs.version }} && git push origin v${{ github.event.inputs.version }}`
+            3. The release workflow will automatically publish both packages
+          branch: "version-bump-${{ github.event.inputs.version }}"
+          base: master
+          delete-branch: true

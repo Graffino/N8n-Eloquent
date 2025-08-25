@@ -33,20 +33,25 @@ The workflows use your self-hosted runners with these labels:
 ### **Version Synchronization**
 - Both packages (Laravel + n8n extension) are kept at the same version
 - The `scripts/sync-versions.sh` script ensures version consistency
-- Single version bump updates both `composer.json` and `package.json`
+- **Safe approach**: Versions are synced manually via PR, then released via tags
 
 ### **Release Process**
-1. **Main Workflow** (`release.yml`): Coordinates the entire release process
-   - Syncs versions between packages
+1. **Version Sync Workflow** (`sync-versions.yml`): Safely syncs versions
+   - Creates a PR with version changes
+   - No automatic git pushes or modifications
+   
+2. **Main Release Workflow** (`release.yml`): Publishes both packages
+   - Triggers on version tags (e.g., `v2.1.1`)
    - Publishes to both npm and Packagist
    - Creates GitHub release with assets
    
-2. **Individual Workflows**: Can still be run separately if needed
+3. **Individual Workflows**: Can still be run separately if needed
    - `publish-npm.yml`: Publishes n8n extension to npm
    - `publish-packagist.yml`: Publishes Laravel package to Packagist
 
 ### **Triggers**
-- **Automatic**: Push a new version tag (e.g., `v2.1.1`)
+- **Version Sync**: Manual workflow dispatch (creates PR)
+- **Release**: Push a new version tag (e.g., `v2.1.1`)
 - **Manual**: Use workflow dispatch with custom version input
 
 ## Testing
@@ -62,8 +67,20 @@ The workflows use your self-hosted runners with these labels:
 
 ## Release Workflow
 
-The main `release.yml` workflow:
-1. **Prepares Release**: Syncs versions and commits changes
+### **Version Sync Workflow** (`sync-versions.yml`):
+1. **Manual Trigger**: Run workflow dispatch with desired version
+2. **Syncs Versions**: Updates both `composer.json` and `package.json`
+3. **Creates PR**: Opens pull request for review
+4. **Safe Process**: No automatic git pushes or modifications
+
+### **Main Release Workflow** (`release.yml`):
+1. **Triggers on Tag**: Runs when you push a version tag
 2. **Publishes npm**: Builds and publishes n8n extension
 3. **Publishes Packagist**: Tests and publishes Laravel package
 4. **Creates Release**: Generates GitHub release with both packages
+
+### **Typical Release Process**:
+1. Run "Sync Package Versions" workflow with new version
+2. Review and merge the PR
+3. Create and push new tag: `git tag v2.1.1 && git push origin v2.1.1`
+4. Release workflow automatically publishes both packages

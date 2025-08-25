@@ -37,21 +37,25 @@ jobs:
           echo "version=$VERSION_NO" >> $GITHUB_OUTPUT
           echo "VERSION_NO=$VERSION_NO" >> $GITHUB_ENV
           
-      - name: Sync versions
+      - name: Verify current versions
         run: |
-          chmod +x scripts/sync-versions.sh
-          ./scripts/sync-versions.sh ${{ steps.get-version.outputs.version }}
+          echo "Current versions:"
+          echo "Laravel: $(grep '"version"' composer.json)"
+          echo "n8n: $(grep '"version"' n8n-extension/package.json)"
           
-      - name: Commit version changes
+      - name: Check if versions need syncing
+        id: check-sync
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add composer.json n8n-extension/package.json n8n-extension/package-lock.json
-          git commit -m "Bump version to ${{ steps.get-version.outputs.version }}"
+          LARAVEL_VERSION=$(grep '"version"' composer.json | sed 's/.*"version": "\([^"]*\)".*/\1/')
+          N8N_VERSION=$(grep '"version"' n8n-extension/package.json | sed 's/.*"version": "\([^"]*\)".*/\1/')
           
-      - name: Push version changes
-        run: |
-          git push origin HEAD:${{ github.ref_name }}
+          if [ "$LARAVEL_VERSION" = "${{ steps.get-version.outputs.version }}" ] && [ "$N8N_VERSION" = "${{ steps.get-version.outputs.version }}" ]; then
+            echo "needs-sync=false" >> $GITHUB_OUTPUT
+            echo "✅ Versions are already synced at ${{ steps.get-version.outputs.version }}"
+          else
+            echo "needs-sync=true" >> $GITHUB_OUTPUT
+            echo "🔄 Versions need syncing to ${{ steps.get-version.outputs.version }}"
+          fi
 
   publish-npm:
     needs: prepare-release
