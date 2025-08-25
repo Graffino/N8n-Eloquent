@@ -118,4 +118,5 @@ The MIT License (MIT). See [LICENSE](LICENSE) for details.
 
 ---
 
-Built with ❤️ by Short Inc. 
+Built with ❤️ by Short Inc.  
+Assisted by AI after built with love 

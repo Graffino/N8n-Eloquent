@@ -577,4 +577,5 @@ This project is licensed under the MIT License - see the [LICENSE](../LICENSE) f
 ---
 
 Built with ❤️ by Short Inc.  
-Powered by n8n & Laravel
+Powered by n8n & Laravel  
+Assisted by AI after built with love
