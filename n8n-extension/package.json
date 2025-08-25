@@ -45,10 +45,10 @@
     "email": "nick@short.inc"
   },
   "license": "MIT",
-  "homepage": "https://github.com/shortinc/n8n-eloquent",
+  "homepage": "https://github.com/graffino/n8n-eloquent",
   "repository": {
     "type": "git",
-    "url": "https://github.com/shortinc/n8n-eloquent.git"
+    "url": "https://github.com/graffino/n8n-eloquent.git"
   },
   "engines": {
     "node": ">=18.17.0"

@@ -39,6 +39,11 @@ jobs:
           VERSION_NO=${VERSION_TAG#v}
           echo "VERSION_NO=$VERSION_NO" >> $GITHUB_ENV
           echo "version=$VERSION_NO" >> $GITHUB_OUTPUT
+          
+      - name: Sync versions
+        run: |
+          chmod +x scripts/sync-versions.sh
+          ./scripts/sync-versions.sh ${{ steps.Get-Version.outputs.version }}
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2

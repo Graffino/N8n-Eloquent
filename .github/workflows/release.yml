@@ -1,0 +1,174 @@
+name: Release Both Packages
+run-name: "${{ github.repository }} -> Release v${{ github.ref_name }} by ${{ github.actor }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 2.1.1)'
+        required: true
+        default: '2.1.1'
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  prepare-release:
+    runs-on: [self-hosted, graffino, ubuntu-latest]
+    
+    outputs:
+      version: ${{ steps.get-version.outputs.version }}
+      
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Get version
+        id: get-version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION_NO="${{ github.event.inputs.version }}"
+          else
+            VERSION_TAG="${{ github.ref_name }}"
+            VERSION_NO=${VERSION_TAG#v}
+          fi
+          echo "version=$VERSION_NO" >> $GITHUB_OUTPUT
+          echo "VERSION_NO=$VERSION_NO" >> $GITHUB_ENV
+          
+      - name: Sync versions
+        run: |
+          chmod +x scripts/sync-versions.sh
+          ./scripts/sync-versions.sh ${{ steps.get-version.outputs.version }}
+          
+      - name: Commit version changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add composer.json n8n-extension/package.json n8n-extension/package-lock.json
+          git commit -m "Bump version to ${{ steps.get-version.outputs.version }}"
+          
+      - name: Push version changes
+        run: |
+          git push origin HEAD:${{ github.ref_name }}
+
+  publish-npm:
+    needs: prepare-release
+    runs-on: [self-hosted, graffino, node18]
+    environment: Production
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          registry-url: 'https://registry.npmjs.org/'
+          cache: 'npm'
+          cache-dependency-path: 'n8n-extension/package-lock.json'
+          
+      - name: Install dependencies
+        run: |
+          cd n8n-extension
+          npm ci
+          
+      - name: Build package
+        run: |
+          cd n8n-extension
+          npm run build
+          
+      - name: Publish to npm
+        run: |
+          cd n8n-extension
+          npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  publish-packagist:
+    needs: prepare-release
+    runs-on: [self-hosted, graffino, php8.3]
+    environment: Production
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+          
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, xml, ctype, iconv, intl, zip
+          coverage: none
+          
+      - name: Install Composer
+        uses: ramsey/composer-install@v2
+        with:
+          composer-version: '2.6'
+          dependency-versions: 'locked'
+          install-preferred-packages: true
+          
+      - name: Validate composer.json
+        run: composer validate --strict
+          
+      - name: Run tests
+        run: |
+          composer install --prefer-dist --dev
+          vendor/bin/phpunit --coverage-text --coverage-filter=src/
+          
+      - name: Publish to Packagist
+        run: |
+          curl -X POST \
+            -H "Content-Type: application/json" \
+            -H "Accept: application/json" \
+            -d '{"repository":{"url":"https://github.com/${{ github.repository }}"}}' \
+            "https://packagist.org/api/update-package?username=${{ secrets.PACKAGIST_USERNAME }}&apiToken=${{ secrets.PACKAGIST_TOKEN }}"
+
+  create-release:
+    needs: [publish-npm, publish-packagist]
+    runs-on: [self-hosted, graffino, ubuntu-latest]
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+          
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "Release ${{ github.ref_name }}"
+          body: |
+            ## 🚀 Release ${{ github.ref_name }}
+            
+            ### 📦 Laravel Package
+            - **Composer**: `composer require shortdotinc/n8n-eloquent:${{ needs.prepare-release.outputs.version }}`
+            
+            ### 🔌 n8n Extension
+            - **npm**: `npm install @shortdotinc/n8n-eloquent-nodes@${{ needs.prepare-release.outputs.version }}`
+            
+            ### 🔄 Changes
+            - Both packages are now at version ${{ needs.prepare-release.outputs.version }}
+            - Laravel package published to Packagist
+            - n8n extension published to npm
+            
+            ### 📋 Compatibility
+            - Laravel: ^8.0|^9.0|^10.0|^11.0|^12.0
+            - PHP: ^8.0
+            - Node.js: >=18.17.0
+            - n8n: Latest
+          files: |
+            n8n-extension/dist/**/*
+            n8n-extension/package.json
+            n8n-extension/README.md
+            composer.json
+            README.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
