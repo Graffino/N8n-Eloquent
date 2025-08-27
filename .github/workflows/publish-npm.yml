@@ -9,7 +9,7 @@ on:
 
 jobs:
   publish-npm:
-    runs-on: [self-hosted, graffino, node18]
+    runs-on: [self-hosted, graffino, php8.3]
 
     environment: Production
     env:
