@@ -14,7 +14,7 @@ on:
 
 jobs:
   prepare-release:
-    runs-on: [self-hosted, graffino, ubuntu-latest]
+    runs-on: [self-hosted, graffino, php8.3]
     
     outputs:
       version: ${{ steps.get-version.outputs.version }}
@@ -59,7 +59,7 @@ jobs:
 
   publish-npm:
     needs: prepare-release
-    runs-on: [self-hosted, graffino, node18]
+    runs-on: [self-hosted, graffino, php8.3]
     environment: Production
     
     steps:
