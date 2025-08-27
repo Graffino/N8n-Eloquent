@@ -136,7 +136,7 @@ jobs:
 
   create-release:
     needs: [publish-npm, publish-packagist]
-    runs-on: [self-hosted, graffino, ubuntu-latest]
+    runs-on: [self-hosted, graffino, php8.3]
     
     steps:
       - name: Checkout
