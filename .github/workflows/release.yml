@@ -14,7 +14,11 @@ on:
 
 jobs:
   prepare-release:
-    runs-on: [self-hosted, graffino, php8.3]
+    runs-on: [self-hosted]
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        node: [18]
     
     outputs:
       version: ${{ steps.get-version.outputs.version }}
@@ -24,21 +28,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          
-      - name: Debug Environment
-        run: |
-          echo "🔍 DEBUG INFO:"
-          echo "Runner: $RUNNER_NAME"
-          echo "Labels: $RUNNER_LABELS"
-          echo "OS: $(uname -a)"
-          echo "PHP: $(php --version | head -1)"
-          echo "Node: $(node --version)"
-          echo "Git: $(git --version)"
-          echo "Current directory: $(pwd)"
-          echo "Repository: ${{ github.repository }}"
-          echo "Event: ${{ github.event_name }}"
-          echo "Ref: ${{ github.ref }}"
-          echo "SHA: ${{ github.sha }}"
           
       - name: Get version
         id: get-version
@@ -57,41 +46,21 @@ jobs:
           echo "Current versions:"
           echo "Laravel: $(grep '"version"' composer.json)"
           echo "n8n: $(grep '"version"' n8n-extension/package.json)"
-          
-      - name: Check if versions need syncing
-        id: check-sync
-        run: |
-          LARAVEL_VERSION=$(grep '"version"' composer.json | sed 's/.*"version": "\([^"]*\)".*/\1/')
-          N8N_VERSION=$(grep '"version"' n8n-extension/package.json | sed 's/.*"version": "\([^"]*\)".*/\1/')
-          
-          if [ "$LARAVEL_VERSION" = "${{ steps.get-version.outputs.version }}" ] && [ "$N8N_VERSION" = "${{ steps.get-version.outputs.version }}" ]; then
-            echo "needs-sync=false" >> $GITHUB_OUTPUT
-            echo "✅ Versions are already synced at ${{ steps.get-version.outputs.version }}"
-          else
-            echo "needs-sync=true" >> $GITHUB_OUTPUT
-            echo "🔄 Versions need syncing to ${{ steps.get-version.outputs.version }}"
-          fi
 
   publish-npm:
     needs: prepare-release
-    runs-on: [self-hosted, graffino, php8.3]
+    runs-on: [self-hosted]
     environment: Production
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        node: [18]
     
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           ref: ${{ github.ref }}
-          
-      - name: Debug NPM Environment
-        run: |
-          echo "🔍 NPM DEBUG INFO:"
-          echo "Runner: $RUNNER_NAME"
-          echo "Labels: $RUNNER_LABELS"
-          echo "Node: $(node --version)"
-          echo "NPM: $(npm --version)"
-          echo "Current directory: $(pwd)"
-          echo "N8n extension directory: $(ls -la n8n-extension/)"
           
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -120,8 +89,12 @@ jobs:
 
   publish-packagist:
     needs: prepare-release
-    runs-on: [self-hosted, graffino, php8.3]
+    runs-on: [self-hosted]
     environment: Production
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        php: [8.3]
     
     steps:
       - name: Checkout
@@ -161,7 +134,10 @@ jobs:
 
   create-release:
     needs: [publish-npm, publish-packagist]
-    runs-on: [self-hosted, graffino, php8.3]
+    runs-on: [self-hosted]
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
     
     steps:
       - name: Checkout
